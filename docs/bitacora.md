@@ -18,6 +18,7 @@ Registro histórico del proyecto. Entradas en orden cronológico inverso; cada e
   - Aviso cuando vence el compromiso.
 - Cronómetro del tiempo restante del SLA o de la fecha compromiso en listas y detalle.
 - Los plazos se guardan siempre en UTC.
+- Corrección: el detalle del ticket ya no falla al mostrar comentarios registrados antes de retirar la acción; cualquier evento desconocido se muestra con un ícono genérico.
 
 **Decisiones**
 - Un correo a los Gestores por cada propuesta. El cliente no recibe copia de los cambios.
