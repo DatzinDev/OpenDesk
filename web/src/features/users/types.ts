@@ -13,7 +13,7 @@ export type User = {
 };
 
 export type UserCreate = { email: string; name: string; role: Role };
-export type UserUpdate = Partial<Pick<User, "name" | "role" | "is_active">>;
+export type UserUpdate = Partial<Pick<User, "email" | "name" | "role" | "is_active">>;
 
 export const ROLE_LABELS: Record<Role, string> = {
   admin: "Administrador",

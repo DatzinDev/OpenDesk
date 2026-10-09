@@ -49,7 +49,7 @@ export function UserDrawer({ opened, onClose, user, actor }: Props) {
       );
     } else {
       update.mutate(
-        { id: user.id, data: { name: name.trim(), role, is_active: active } },
+        { id: user.id, data: { email: email.trim().toLowerCase(), name: name.trim(), role, is_active: active } },
         {
           onSuccess: () => {
             notifications.show({ message: "Cambios guardados." });
@@ -71,12 +71,16 @@ export function UserDrawer({ opened, onClose, user, actor }: Props) {
           )}
           <TextInput
             label="Correo de Google"
-            description={user ? undefined : "La persona entrará con la cuenta de Google de este correo."}
+            description={
+              user && email.trim().toLowerCase() !== user.email
+                ? "Al guardar se cierran sus sesiones abiertas y recibirá el aviso de acceso en el nuevo correo."
+                : "La persona entrará con la cuenta de Google de este correo."
+            }
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.currentTarget.value)}
-            disabled={!!user}
+            disabled={locked}
             data-autofocus
           />
           <TextInput label="Nombre" required value={name} onChange={(e) => setName(e.currentTarget.value)} disabled={locked} />
