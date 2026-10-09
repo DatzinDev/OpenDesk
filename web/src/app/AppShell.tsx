@@ -5,7 +5,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useLogout, useMe } from "@/features/auth";
 import { NotificationBell, useLiveNotifications } from "@/features/notifications";
 import { ROLE_LABELS, type Role } from "@/features/users";
-import { DatzinSignature } from "@/shared/ui";
+import { DatzinSignature, Logo } from "@/shared/ui";
 import classes from "./AppShell.module.css";
 
 type NavItem = { to: string; label: string; icon: Icon; roles?: Role[] };
@@ -31,9 +31,7 @@ export function AppShell() {
     <Shell navbar={{ width: 248, breakpoint: "sm", collapsed: { mobile: !opened } }} header={{ height: { base: 56, sm: 0 } }}>
       <Shell.Header hiddenFrom="sm" px="md" bg="navy.7" withBorder={false}>
         <Group h="100%" justify="space-between">
-          <Text fw={600} c="white">
-            OpenDesk
-          </Text>
+          <Logo size={17} />
           <Group gap="xs">
             <NotificationBell />
             <Burger opened={opened} onClick={toggle} color="white" size="sm" aria-label="Abrir menú" />
@@ -43,14 +41,7 @@ export function AppShell() {
 
       <Shell.Navbar className={classes.navbar} p="md">
         <Group justify="space-between" px={12} py={8} mb="lg" visibleFrom="sm">
-          <Group gap={4}>
-            <Text fw={600} fz={20}>
-              OpenDesk
-            </Text>
-            <Text fw={600} fz={20} c="orange.4" aria-hidden>
-              .
-            </Text>
-          </Group>
+          <Logo size={20} />
           <NotificationBell />
         </Group>
 

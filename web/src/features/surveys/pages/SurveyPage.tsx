@@ -2,7 +2,7 @@ import { Alert, Button, Center, Group, Loader, Paper, Stack, Text, Textarea, Tit
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { DatzinSignature } from "@/shared/ui";
+import { DatzinSignature, Logo } from "@/shared/ui";
 import { surveysApi } from "../api";
 
 const SCALE = [1, 2, 3, 4, 5];
@@ -102,10 +102,7 @@ export function SurveyPage() {
   return (
     <main style={{ minHeight: "100vh", background: "var(--mantine-color-gray-1)", display: "grid", placeItems: "center", padding: 16 }}>
       <Stack gap="lg" w="100%" maw={480}>
-        <Group gap={4}>
-          <Text fw={600} fz={20}>OpenDesk</Text>
-          <Text fw={600} fz={20} c="orange.6" aria-hidden>.</Text>
-        </Group>
+        <Logo tone="dark" size={22} />
         <Paper radius="lg" withBorder p="xl">
           <Stack gap="lg">
             {data && (

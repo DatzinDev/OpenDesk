@@ -65,3 +65,16 @@ OpenDesk es software de la familia Datzin y lo comunica de forma discreta:
 - **Inicio de sesión:** panel en `navy` con el patrón hexagonal del logotipo y la leyenda
   "Hecho por Datzin".
 - **Correos:** encabezado con el nombre de OpenDesk y pie "Enviado por OpenDesk, hecho por Datzin".
+
+## Logotipo de OpenDesk
+
+| Archivo | Uso |
+|---|---|
+| `web/src/shared/assets/opendesk-isotipo-blanco.png` y `opendesk-letras-blanco.png` | Sobre fondos azul marino: barra lateral, encabezado móvil y panel de inicio de sesión. |
+| `web/src/shared/assets/opendesk-isotipo-navy.png` y `opendesk-letras-navy.png` | Sobre fondos claros, por ejemplo la página pública de la encuesta. |
+| `web/public/favicon.png` y `apple-touch-icon.png` | Isotipo blanco sobre un cuadro azul marino redondeado; se distingue en pestañas claras y oscuras. |
+| `docs/assets/opendesk-logo-claro.png` y `-oscuro.png` | Logotipo completo (isotipo y letras) del README, según el tema de GitHub. |
+| `docs/assets/fuente/` | Originales en alta resolución, de los que se derivan los anteriores. |
+
+En la interfaz se usa el componente `Logo` (`web/src/shared/ui/Logo.tsx`). El isotipo blanco funciona también como
+marca de agua en el panel de inicio de sesión.
