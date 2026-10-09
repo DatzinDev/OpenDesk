@@ -1,7 +1,7 @@
 from urllib.parse import quote
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
@@ -10,7 +10,8 @@ from app.core.db import get_db
 from app.modules import identity, users
 from app.modules.tickets import service
 from app.modules.tickets.schemas import (CloseIn, DecisionIn, Person, ProposalIn, ReassignIn, ReopenIn, SetStatusIn,
-                                         StatusIn, StatusOut, TicketDetail, TicketIn, TicketOut, TicketUpdate)
+                                         StatusIn, StatusOut, TicketDetail, TicketIn, TicketOut, TicketPage,
+                                         TicketUpdate)
 from app.shared import storage
 
 router = APIRouter(prefix="/api", tags=["tickets"])
@@ -38,6 +39,13 @@ def _form(model, data: str):
 
 async def _uploads(files: list[UploadFile]) -> list[service.Upload]:
     return [service.Upload(f.filename or "archivo", f.content_type or "", await f.read()) for f in files]
+
+
+@router.get("/tickets/page", response_model=TicketPage)
+def page_tickets(page: int = Query(1, ge=1), size: int = Query(50, ge=1, le=200), area_id: UUID | None = None,
+                 assignee_id: UUID | None = None, status: str | None = None, q: str | None = None,
+                 actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
+    return service.page_for(db, actor, page, size, area_id=area_id, assignee_id=assignee_id, status=status, q=q)
 
 
 @router.get("/tickets", response_model=list[TicketOut])

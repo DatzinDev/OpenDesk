@@ -25,8 +25,8 @@ def add(db: Session, obj):
     return obj
 
 
-def list_(db: Session, *, assignee_id=None, area_id=None, status=None, q=None) -> list[Ticket]:
-    query = select(Ticket).order_by(Ticket.status == "cerrado", Ticket.due_at)
+def _filtered(*, assignee_id=None, area_id=None, status=None, q=None):
+    query = select(Ticket)
     if assignee_id:
         query = query.where(Ticket.assignee_id == assignee_id)
     if area_id:
@@ -39,8 +39,18 @@ def list_(db: Session, *, assignee_id=None, area_id=None, status=None, q=None) -
         digits = "".join(c for c in q if c.isdigit())
         cond = Ticket.title.ilike(f"%{q}%")
         query = query.where(or_(cond, Ticket.id == int(digits)) if digits else cond)
-    # ponytail: sin paginación; agregarla cuando la bandeja supere unos miles de tickets.
+    return query
+
+
+def list_(db: Session, limit: int | None = None, offset: int = 0, **filters) -> list[Ticket]:
+    query = _filtered(**filters).order_by(Ticket.status == "cerrado", Ticket.due_at, Ticket.id)
+    if limit:
+        query = query.limit(limit).offset(offset)
     return list(db.scalars(query))
+
+
+def count(db: Session, **filters) -> int:
+    return db.scalar(select(func.count()).select_from(_filtered(**filters).subquery()))
 
 
 def statuses(db: Session) -> list[TrackingStatus]:

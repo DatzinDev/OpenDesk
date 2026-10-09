@@ -123,6 +123,11 @@ class TicketOut(BaseModel):
     pending: EventOut | None = None
 
 
+class TicketPage(BaseModel):
+    items: list[TicketOut]
+    total: int
+
+
 class TicketDetail(TicketOut):
     events: list[EventOut] = []
     names: dict[str, str] = {}  # UUID → nombre de las personas mencionadas en la línea de tiempo

@@ -12,7 +12,7 @@ from app.modules.tickets.events import TicketChanged
 from app.modules.tickets.models import Attachment, Event, Ticket, TrackingStatus
 from app.modules.tickets.schemas import (AttachmentOut, CloseIn, DecisionIn, EventOut, Person, ProposalIn, ReassignIn, ReopenIn,
                                          SetStatusIn, StatusIn, StatusOut, TicketDetail, TicketIn, TicketOut,
-                                         TicketUpdate)
+                                         TicketPage, TicketUpdate)
 from app.shared import storage
 from app.shared.events import publish
 
@@ -169,12 +169,14 @@ def _close(t: Ticket, outcome: str) -> dict:
     return data
 
 
-def _first_response(t: Ticket) -> dict:
-    """Primera respuesta aceptada de la asignación vigente: minutos y si cumplió el SLA (07)."""
+def _first_response(db: Session, t: Ticket) -> dict:
+    """Primera respuesta aceptada de la asignación vigente: minutos (de reloj y hábiles) y si cumplió el SLA (07)."""
     if t.committed:
         return {}
     at = now()
-    return {"first_response_min": int((at - _utc(t.due_from)).total_seconds() // 60), "sla_met": at <= _utc(t.due_at)}
+    return {"first_response_min": int((at - _utc(t.due_from)).total_seconds() // 60),
+            "first_response_business_min": int(areas.business_hours(db, t.area_id, _utc(t.due_from), at) * 60),
+            "sla_met": at <= _utc(t.due_at)}
 
 
 def _cancel_pending(db: Session, t: Ticket) -> None:
@@ -246,17 +248,32 @@ def _detail(db: Session, t: Ticket) -> TicketDetail:
                 names={str(u): n for u, n in r.people.values()})
 
 
-def list_for(db: Session, actor: users.UserOut, area_id: UUID | None = None, assignee_id: UUID | None = None,
-             status=None, q=None) -> list[TicketOut]:
+def _filters(db: Session, actor: users.UserOut, area_id, assignee_id, status, q) -> dict | None:
+    """Filtros internos de la lista; None si un filtro apunta a algo que no existe."""
     area, assignee = areas.id_of(db, area_id), users.id_of(db, assignee_id)
     if (area_id and not area) or (assignee_id and not assignee):
-        return []
+        return None
     if not _staff(actor):
         assignee, area = actor.id, None
-    tickets = repo.list_(db, assignee_id=assignee, area_id=area, status=status, q=q)
+    return {"assignee_id": assignee, "area_id": area, "status": status, "q": q}
+
+
+def list_for(db: Session, actor: users.UserOut, area_id: UUID | None = None, assignee_id: UUID | None = None,
+             status=None, q=None, limit: int | None = None, offset: int = 0) -> list[TicketOut]:
+    filters = _filters(db, actor, area_id, assignee_id, status, q)
+    if filters is None:
+        return []
+    tickets = repo.list_(db, limit, offset, **filters)
     pending = repo.pending_by_ticket(db, [t.id for t in tickets if t.status == "pendiente"])
     r = _refs(db, tickets, pending.values())
     return [_out(t, r, pending.get(t.id)) for t in tickets]
+
+
+def page_for(db: Session, actor: users.UserOut, page: int, size: int, **kw) -> TicketPage:
+    """Página de la bandeja con el total, para paginar en la interfaz."""
+    filters = _filters(db, actor, kw.get("area_id"), kw.get("assignee_id"), kw.get("status"), kw.get("q"))
+    total = repo.count(db, **filters) if filters is not None else 0
+    return TicketPage(items=list_for(db, actor, limit=size, offset=(page - 1) * size, **kw), total=total)
 
 
 def detail(db: Session, actor: users.UserOut, ticket_id: UUID) -> TicketDetail:
@@ -391,7 +408,7 @@ def accept(db: Session, actor: users.UserOut, ticket_id: UUID, event_id: UUID, d
         else:
             target = _person(db, p.data["user_id"], t.area_id)
     p.state, p.decided_by, p.decision_comment = "accepted", actor.id, data.comment.strip()
-    p.data = {**p.data, **_first_response(t)}
+    p.data = {**p.data, **_first_response(db, t)}
     if p.kind == "update":
         t.due_from, t.due_at, t.committed, t.status = now(), datetime.fromisoformat(p.data["due_at"]).astimezone(timezone.utc), True, "seguimiento"
         t.reminded = t.overdue_notified = False

@@ -155,7 +155,7 @@ BEGIN
       -- Escalamiento manual aceptado.
       INSERT INTO tickets_events (ticket_id, kind, actor_id, created_at, state, decided_by, data, comment)
       VALUES (t, 'escalate', who, created + interval '1 hour', 'accepted', pg_temp.u('jorge.medina'),
-              json_build_object('first_response_min', 60, 'sla_met', true), 'Requiere apoyo del siguiente nivel.');
+              json_build_object('first_response_min', 60, 'first_response_business_min', 60, 'sla_met', true), 'Requiere apoyo del siguiente nivel.');
       INSERT INTO tickets_events (ticket_id, kind, actor_id, created_at, data)
       VALUES (t, 'assigned', pg_temp.u('jorge.medina'), created + interval '1 hour',
               json_build_object('from', who, 'to', up, 'area_id', area, 'reason', 'escalate'));
@@ -190,7 +190,7 @@ BEGIN
       due := first_at + (closed - first_at) * (0.8 + random() * 0.5);
       INSERT INTO tickets_events (ticket_id, kind, actor_id, created_at, state, decided_by, data, comment)
       VALUES (t, 'update', who, first_at, 'accepted', pg_temp.u('mariana.ruiz'),
-              json_build_object('due_at', pg_temp.iso(due), 'first_response_min', frm, 'sla_met', met), 'Atiendo y doy seguimiento.');
+              json_build_object('due_at', pg_temp.iso(due), 'first_response_min', frm, 'first_response_business_min', frm, 'sla_met', met), 'Atiendo y doy seguimiento.');
       UPDATE tickets_tickets SET due_from = first_at, due_at = due WHERE id = t;
       INSERT INTO tickets_events (ticket_id, kind, actor_id, created_at, state, decided_by, data, comment)
       VALUES (t, 'close', who, closed, 'accepted', pg_temp.u('mariana.ruiz'),
@@ -198,7 +198,7 @@ BEGIN
     ELSE
       INSERT INTO tickets_events (ticket_id, kind, actor_id, created_at, state, decided_by, data, comment)
       VALUES (t, 'close', who, first_at, 'accepted', pg_temp.u('jorge.medina'),
-              json_build_object('outcome', outcome, 'committed', false, 'first_response_min', frm, 'sla_met', met), 'Atendido.');
+              json_build_object('outcome', outcome, 'committed', false, 'first_response_min', frm, 'first_response_business_min', frm, 'sla_met', met), 'Atendido.');
     END IF;
 
     IF random() < 0.05 THEN

@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session
 
 from app.core.db import now
+from app.modules import areas
 from app.modules.analytics import repository as repo
 
 TABS = ("summary", "times", "team", "flow", "clients", "demand", "me")
@@ -85,8 +86,10 @@ def _kpi(value, prev=None):
 class Data:
     """Datos de un periodo normalizados (fechas en UTC) e indexados por ticket."""
 
-    def __init__(self, raw: dict, names: dict, f: Filters):
+    def __init__(self, raw: dict, names: dict, f: Filters, clock=None):
         self.f, self.names, self.now = f, names, now()
+        # Horas hábiles según el horario y los festivos del área del ticket; sin reloj, horas naturales.
+        self.clock = clock or (lambda area_id, a, b: _hours(a, b))
         self.span = f.end - f.start
         self.prev = (f.start - self.span, f.start)
         for t in raw["tickets"]:
@@ -121,11 +124,19 @@ class Data:
     def closed(self, a, b):
         return [t for t in self.tickets if _in(t["closed_at"], a, b)]
 
+    def solve_hours(self, t) -> float:
+        return self.clock(t["area_id"], t["created_at"], t["closed_at"])
+
+    @staticmethod
+    def first_hours(e) -> float:
+        """Primera respuesta en horas hábiles; los registros previos solo tienen horas de reloj."""
+        return e["data"].get("first_response_business_min", e["data"]["first_response_min"]) / 60
+
     def resolution(self, a, b):
-        return [_hours(t["created_at"], t["closed_at"]) for t in self.closed(a, b)]
+        return [self.solve_hours(t) for t in self.closed(a, b)]
 
     def first_response(self, a, b):
-        return [e["data"]["first_response_min"] / 60 for e in self.responses(a, b)[0]]
+        return [self.first_hours(e) for e in self.responses(a, b)[0]]
 
     def answered(self, a, b):
         return [s for s in self.surveys if _in(s["answered_at"], a, b) and s["rating"]]
@@ -144,7 +155,7 @@ class Data:
 
 def _data(db: Session, f: Filters) -> Data:
     since = f.start - (f.end - f.start)  # incluye el periodo anterior para comparar
-    return Data(repo.load(db, since, f.end, f.area_id, f.priority, f.user_id), repo.names(db), f)
+    return Data(repo.load(db, since, f.end, f.area_id, f.priority, f.user_id), repo.names(db), f, areas.business_clock(db))
 
 
 def _both(d: Data, fn):
@@ -251,8 +262,8 @@ def team(d: Data) -> dict:
             "carga": sum(1 for t in d.open if t["assignee_id"] == uid),
             "cerrados": len(closed),
             "sla": _pct(sum(1 for e in mine_ok if e["data"]["sla_met"]), len(mine_ok) + len(mine_auto)),
-            "primera_respuesta": _avg([e["data"]["first_response_min"] / 60 for e in mine_ok]),
-            "resolucion": _avg([_hours(t["created_at"], t["closed_at"]) for t in closed]),
+            "primera_respuesta": _avg([d.first_hours(e) for e in mine_ok]),
+            "resolucion": _avg([d.solve_hours(t) for t in closed]),
             "csat": _avg([s["rating"] for s in d.answered(f.start, f.end) if s["ticket_id"] in closed_ids]),
             "rechazos": _pct(sum(1 for e in decided if e["state"] == "rejected"), len(decided)),
             "escalamientos": sum(1 for e in decided if e["kind"] == "escalate"),

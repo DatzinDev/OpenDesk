@@ -103,3 +103,13 @@ def test_edit_by_assignee_or_staff_and_logged(db, env):
     t.close(db, root, tk.id, CloseIn(outcome="resuelto", comment="Hecho"))
     with pytest.raises(t.Conflict, match="cerrado"):
         t.update(db, root, tk.id, TicketUpdate(title="X"))
+
+
+def test_inbox_pagination(db, env):
+    root, ana, *_, new = env
+    for _ in range(5):
+        new()
+    first = t.page_for(db, root, 1, 2, status="abiertos")
+    last = t.page_for(db, root, 3, 2, status="abiertos")
+    assert first.total == 5 and len(first.items) == 2 and len(last.items) == 1
+    assert not {x.id for x in first.items} & {x.id for x in last.items}
