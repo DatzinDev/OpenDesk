@@ -19,6 +19,7 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://opendesk:${POSTGRES_PASSWORD}@db/opendesk
+      DEV_SEED: ${DEV_SEED:-true}
     volumes:
       - ./api:/srv
     depends_on:
