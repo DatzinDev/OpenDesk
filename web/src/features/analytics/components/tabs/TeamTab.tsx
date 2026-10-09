@@ -21,7 +21,7 @@ export function TeamTab({ r }: { r: Report }) {
           <Table verticalSpacing="sm" horizontalSpacing="md" highlightOnHover>
             <Table.Thead>
               <Table.Tr>
-                {["Persona", "Carga actual", "Cerrados", "SLA cumplido", "1.ª respuesta", "Resolución", "CSAT", "Rechazos", "Escalamientos"].map((h) => (
+                {["Persona", "Carga actual", "Cerrados", "SLA cumplido", "1.ª respuesta (háb.)", "Resolución (háb.)", "CSAT", "Rechazos", "Escalamientos"].map((h) => (
                   <Table.Th key={h}>{h}</Table.Th>
                 ))}
               </Table.Tr>

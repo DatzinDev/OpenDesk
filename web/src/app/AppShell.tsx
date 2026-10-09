@@ -3,7 +3,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { IconBuilding, IconChartBar, IconChecklist, IconHistory, IconInbox, IconLogout, IconSettings, IconUsers, type Icon } from "@tabler/icons-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useLogout, useMe } from "@/features/auth";
-import { NotificationBell } from "@/features/notifications";
+import { NotificationBell, useLiveNotifications } from "@/features/notifications";
 import { ROLE_LABELS, type Role } from "@/features/users";
 import { DatzinSignature } from "@/shared/ui";
 import classes from "./AppShell.module.css";
@@ -24,6 +24,7 @@ export function AppShell() {
   const { data: me } = useMe();
   const logout = useLogout();
   const [opened, { toggle, close }] = useDisclosure();
+  useLiveNotifications();
   if (!me) return null;
 
   return (

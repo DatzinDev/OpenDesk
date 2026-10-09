@@ -1,6 +1,6 @@
-import { Button, Group, Paper, Select, Stack, Table, Text, TextInput, Title } from "@mantine/core";
+import { Button, Group, Pagination, Paper, Select, Stack, Table, Text, TextInput, Title } from "@mantine/core";
 import { IconPlus, IconSearch } from "@tabler/icons-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAreas } from "@/features/areas";
 import { useUsers } from "@/features/users";
@@ -9,8 +9,10 @@ import { ActionModal, type StaffAction } from "../components/ActionModal";
 import { DueLabel, ManagerFlag, PriorityBadge, StatusBadge, dateFmt } from "../components/Badges";
 import { TicketDrawer } from "../components/TicketDrawer";
 import { useTrackingName } from "../components/TrackingSelect";
-import { useTickets } from "../hooks";
+import { useTicketPage, useTickets } from "../hooks";
 import { PROPOSAL_LABELS, STATUS_LABELS, type Status, type Ticket } from "../types";
+
+const PAGE_SIZE = 50;
 
 const STATUS_OPTIONS = [
   { value: "abiertos", label: "Abiertos" },
@@ -29,12 +31,12 @@ export function InboxPage() {
   const { data: areas = [] } = useAreas();
   const { data: users = [] } = useUsers();
   const { data: pending = [] } = useTickets({ status: "pendiente" });
-  const { data: tickets = [], isLoading } = useTickets({
-    status,
-    area_id: areaId ?? undefined,
-    assignee_id: assigneeId ?? undefined,
-    q: q.trim() || undefined,
-  });
+  const filters = { status, area_id: areaId ?? undefined, assignee_id: assigneeId ?? undefined, q: q.trim() || undefined };
+  const [page, setPage] = useState(1);
+  useEffect(() => setPage(1), [status, areaId, assigneeId, q]);
+  const { data: result, isLoading } = useTicketPage(filters, page, PAGE_SIZE);
+  const tickets = result?.items ?? [];
+  const pages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
   const trackingName = useTrackingName();
   const areaName = (id: string) => areas.find((a) => a.id === id)?.name ?? "";
   const open = (t: Ticket) => navigate(`/tickets/${t.id}`);
@@ -173,6 +175,14 @@ export function InboxPage() {
           </Text>
         )}
       </Paper>
+      {(result?.total ?? 0) > 0 && (
+        <Group justify="space-between" mt="md">
+          <Text size="sm" c="dimmed">
+            {result!.total} tickets
+          </Text>
+          {pages > 1 && <Pagination total={pages} value={page} onChange={setPage} size="sm" />}
+        </Group>
+      )}
 
       <TicketDrawer opened={creating} onClose={() => setCreating(false)} />
       <ActionModal ticket={modal?.ticket ?? null} action={modal?.action ?? null} onClose={() => setModal(null)} />

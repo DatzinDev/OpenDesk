@@ -13,10 +13,12 @@ import type {
 } from "./types";
 
 const post = <T,>(path: string, body: unknown) => http<T>(path, { method: "POST", body: json(body) });
-const qs = (f: TicketFilters) => new URLSearchParams(Object.entries(f).filter(([, v]) => v) as [string, string][]).toString();
+const qs = (f: Record<string, string | undefined>) => new URLSearchParams(Object.entries(f).filter(([, v]) => v) as [string, string][]).toString();
 
 export const ticketsApi = {
   list: (f: TicketFilters = {}) => http<Ticket[]>(`/tickets?${qs(f)}`),
+  page: (f: TicketFilters, page: number, size: number) =>
+    http<{ items: Ticket[]; total: number }>(`/tickets/page?${qs({ ...f, page: String(page), size: String(size) })}`),
   get: (id: string) => http<TicketDetail>(`/tickets/${id}`),
   peers: () => http<Person[]>("/tickets/peers"),
   people: (areaId: string) => http<Person[]>(`/tickets/people/${areaId}`),
