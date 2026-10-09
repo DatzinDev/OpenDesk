@@ -14,6 +14,8 @@ router = APIRouter(prefix="/api", tags=["surveys"])
 def _call(fn, *args):
     try:
         return fn(*args)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
     except service.Conflict as e:
         raise HTTPException(409, str(e))
     except (service.NotFound, tickets.NotFound):
@@ -28,7 +30,7 @@ def status(token: str, db: Session = Depends(get_db)):
 
 @router.post("/surveys/{token}/rating", response_model=SurveyStatus)
 def rate(token: str, data: RatingIn, db: Session = Depends(get_db)):
-    return _call(service.rate, db, token, data.rating)
+    return _call(service.rate, db, token, data.ratings if data.ratings is not None else data.rating)
 
 
 @router.post("/surveys/{token}/comment", response_model=SurveyStatus)

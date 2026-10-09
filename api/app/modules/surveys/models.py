@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, JSON, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, PublicId, now
@@ -19,4 +19,6 @@ class Survey(PublicId, Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     rating: Mapped[int | None] = mapped_column(Integer)
     comment: Mapped[str] = mapped_column(Text, default="")
+    questions: Mapped[list] = mapped_column(JSON, default=list)
+    ratings: Mapped[dict] = mapped_column(JSON, default=dict)
     answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

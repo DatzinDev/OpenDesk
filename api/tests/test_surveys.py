@@ -60,3 +60,41 @@ def test_expired_token_rejected(db, env):
     assert surveys.status(db, tokens[-1]).state == "expired"
     with pytest.raises(surveys.Conflict, match="venció"):
         surveys.rate(db, tokens[-1], 5)
+
+
+def test_multiple_stars_snapshot_and_atomic_validation(db, env):
+    from uuid import uuid4
+    from app.modules.settings import survey_form
+    root, _, new, tokens = env
+    definition = survey_form.read(db)
+    extra = str(uuid4())
+    definition.questions.append(survey_form.Question(id=extra, label="¿Fue clara la respuesta?"))
+    survey_form.save(db, root, definition)
+    tk = new()
+    t.close(db, root, tk.id, CloseIn(outcome="resuelto", comment="Hecho"))
+    token = tokens[-1]
+    definition = survey_form.read(db)
+    definition.questions[1].label = "Nueva pregunta"
+    survey_form.save(db, root, definition)
+    assert surveys.status(db, token).questions[1]["label"] == "¿Fue clara la respuesta?"
+    with pytest.raises(ValueError):
+        surveys.rate(db, token, {survey_form.MAIN: 5})
+    assert surveys.status(db, token).state == "pending"
+    with pytest.raises(ValueError):
+        surveys.rate(db, token, {survey_form.MAIN: 5, extra: True})
+    answered = surveys.rate(db, token, {survey_form.MAIN: 4, extra: 2})
+    assert answered.rating == 4 and answered.ratings[extra] == 2
+    assert surveys.for_ticket(db, root, tk.id).ratings[extra] == 2
+
+
+def test_answer_rechecks_a_previously_loaded_survey(db, env):
+    from app.core.db import SessionLocal
+    root, _, new, tokens = env
+    t.close(db, root, new().id, CloseIn(outcome="resuelto", comment="Hecho"))
+    token = tokens[-1]
+    with SessionLocal() as other:
+        cached = surveys._find(other, token)
+        assert cached.rating is None
+        surveys.rate(db, token, 4)
+        with pytest.raises(surveys.Conflict, match="ya fue respondida"):
+            surveys.rate(other, token, 5)
