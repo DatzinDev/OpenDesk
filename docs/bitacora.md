@@ -11,6 +11,7 @@ Registro histórico del proyecto. Entradas en orden cronológico inverso; cada e
 - Tickets registra, al aceptar la primera respuesta, el tiempo y el cumplimiento del SLA; al cerrar, si se cumplió la fecha compromiso.
 - Datos de prueba: unos 420 tickets históricos de 90 días, con una distribución realista de horarios, tiempos, escalamientos, envíos entre áreas y encuestas.
 - La sección de Analítica se carga de forma diferida, para no hacer más pesada la carga inicial de la aplicación.
+- Corrección: al cambiar de pestaña ya no se intentan dibujar las gráficas de la nueva pestaña con los datos de la anterior, lo que provocaba un error hasta recargar la página.
 
 **Decisiones**
 - Se agregan indicadores no previstos al inicio: percentil 90, antigüedad de los abiertos, tasa de rechazo, reaperturas, envíos entre áreas, clientes recurrentes y mapa de calor de la demanda.
