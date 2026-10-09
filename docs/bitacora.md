@@ -2,6 +2,16 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-09 — Edición de tickets
+
+**Cambios**
+- El Gestor, el Admin y el Usuario asignado pueden editar el título, la descripción, la prioridad y los datos del cliente de un ticket abierto, desde el botón "Editar" del detalle.
+- Cada edición queda en el historial con el valor anterior y el nuevo, y en la auditoría.
+
+**Decisiones**
+- El área y la persona asignada no se editan: se cambian con Reasignar, que reinicia el SLA.
+- Los tickets cerrados no se editan; para corregirlos se reabren.
+
 ## 2026-10-09 — Fase 5: encuesta de satisfacción
 
 **Cambios**
