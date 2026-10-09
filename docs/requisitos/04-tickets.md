@@ -1,72 +1,108 @@
 # 04 — Tickets y flujo
 
 ## Objetivo
-Crear un ticket en menos de 30 segundos y que todo su seguimiento sea una conversación
-clara de propuestas y decisiones.
+Crear un ticket en menos de 30 segundos y que todo su seguimiento sea una conversación clara de
+propuestas y decisiones.
 
-## Crear ticket (Gestor): un solo formulario, 7 campos
+## Crear ticket (Gestor o Admin): un solo formulario, 7 campos
 | Campo | Obligatorio | Nota |
 |---|:-:|---|
 | Título | ✅ | una línea |
 | Descripción | ✅ | texto libre |
 | Área | ✅ | filtra la lista de asignables |
-| Asignado a | ✅ | usuario del área |
+| Asignado a | ✅ | persona activa del área |
 | Prioridad | ✅ | Alta / Media / Baja; valor por defecto: Media |
 | Nombre del cliente | ❌ | |
 | Correo del cliente | ❌ | habilita la encuesta (06) |
 
+Opcionalmente se pueden agregar adjuntos (ver RF-04.14).
+
 - RF-04.0 La prioridad es únicamente informativa: sirve para clasificar, filtrar y para la
   analítica. No modifica el SLA ni el orden de atención.
+- RF-04.1 Cada ticket tiene un **folio** visible con el formato `OD-000123`. Se muestra en listas,
+  detalle y correos, y se puede buscar por él.
 
 Categorías y etiquetas: fuera de v1.
 
 ## Estados
 ```
-Asignado ──(propuesta)──> Pendiente de aprobación ──(acepta)──> En seguimiento / Escalado / Cerrado
+Asignado ──(propuesta)──> Pendiente de aprobación ──(acepta)──> En seguimiento / Asignado (nuevo responsable) / Cerrado
     ^                              │
-    └─────────(rechaza)────────────┘
+    └──(rechaza; vuelve a En seguimiento si ya hay compromiso)
+Cerrado ──(el Gestor reabre)──> Asignado
 ```
 | Estado | Significado |
 |---|---|
-| Asignado | Usuario debe proponer algo. SLA corriendo si nunca se ha aceptado propuesta. |
-| Pendiente de aprobación | Usuario envió propuesta; Gestor debe decidir. |
+| Asignado | El Usuario debe proponer algo. Corre el SLA de primera respuesta. |
+| Pendiente de aprobación | El Usuario envió una propuesta; el Gestor debe decidir. |
 | En seguimiento | Actualización aceptada; hay fecha compromiso vigente. |
-| Escalado | Pasó al responsable directo (vuelve a quedar "Asignado" para el nuevo). |
-| Cerrado | Cierre aceptado. Resultado: **Resuelto** o **No resuelto**. |
+| Cerrado | Resultado: **Resuelto** o **No resuelto**. |
 
-## Acciones del Usuario (solo 3)
-- RF-04.1 **Agregar actualización**: comentario de lo que hará + **fecha tentativa** de resolución (obligatoria, futura).
-- RF-04.2 **Escalar**: comentario del motivo. Al aceptarse, pasa al responsable directo (03).
-- RF-04.3 **Cerrar**: comentario de lo que se hizo.
-- RF-04.4 Solo puede haber **una propuesta pendiente** a la vez por ticket.
+Escalamientos y reasignaciones no son un estado: quedan en la línea de tiempo y el ticket vuelve a
+"Asignado" para el nuevo responsable.
+
+## Acciones del Usuario asignado (4 propuestas)
+- RF-04.2 **Agregar actualización**: comentario de lo que hará y **fecha tentativa** de resolución (obligatoria, futura).
+- RF-04.3 **Escalar**: comentario del motivo. Al aceptarse, sube al siguiente nivel de su área (03).
+- RF-04.4 **Reasignar**: comentario del motivo y destino: un **compañero activo de su área** o **otra área**.
+- RF-04.5 **Cerrar**: comentario de lo que se hizo.
+- RF-04.6 Solo puede haber **una propuesta pendiente** a la vez por ticket.
 
 ## Decisiones del Gestor
-- RF-04.5 **Aceptar** (comentario opcional) → aplica la acción. La primera aceptación detiene el SLA (02).
-- RF-04.6 **Rechazar** (comentario obligatorio) → ticket vuelve a "Asignado"; el Usuario debe
-  proponer otra fecha/acción.
-- RF-04.7 Además el Gestor puede en cualquier momento: **reasignar**, **cerrar directamente**
-  (Resuelto / No resuelto, con comentario) y **comentar**.
-- RF-04.8 Al aceptar un cierre, el Gestor marca **Resuelto** o **No resuelto**.
+Cualquier Gestor o Admin puede decidir cualquier propuesta.
+- RF-04.7 **Aceptar** (comentario opcional) aplica la acción:
+  - Actualización: su fecha tentativa se vuelve la **fecha compromiso** y el ticket pasa a "En seguimiento".
+  - Escalar: se aplica la matriz (RF-03.4 y RF-03.5).
+  - Reasignar a un compañero: el ticket pasa a esa persona.
+  - Reasignar a otra área: el Gestor **elige a la persona** del área destino al aceptar.
+  - Cerrar: el Gestor marca **Resuelto** o **No resuelto**.
+- RF-04.8 **Rechazar** (comentario obligatorio): el ticket vuelve a "En seguimiento" si ya tenía
+  compromiso, o a "Asignado" si no; el Usuario debe proponer otra acción.
+- RF-04.9 Además, el Gestor puede en cualquier momento **reasignar** a cualquier persona, **cerrar
+  directamente** (Resuelto / No resuelto, con comentario) y **comentar**. Si había una propuesta
+  pendiente, queda **cancelada**.
+- RF-04.10 El Gestor puede **reabrir** un ticket cerrado (comentario obligatorio): vuelve a "Asignado"
+  con la última persona asignada y reinicia el SLA.
+- RF-04.11 Toda asignación (creación, escalamiento, reasignación o reapertura) reinicia el SLA con la
+  configuración vigente del área destino y descarta la fecha compromiso anterior.
 
-## Fecha compromiso
-- RF-04.9 Al aceptar una actualización, su fecha tentativa se vuelve la fecha compromiso vigente.
-- RF-04.10 Si se vence la fecha compromiso sin cierre → ticket marcado **"Compromiso vencido"**,
-  Usuario y Gestor notificados; el Usuario debe proponer nueva actualización o cierre.
+## Plazos
+- RF-04.12 El plazo vigente es el SLA de primera respuesta o, tras aceptar una actualización, la
+  fecha compromiso. Se muestra con el semáforo de RF-02.15.
+- RF-04.13 Si el plazo vence sin cierre, el ticket se marca **"SLA vencido"** o **"Compromiso vencido"**.
+  El auto-escalamiento y los avisos por correo se definen en 05.
 
-## Vistas (pocas)
-- **Usuario — "Mis actividades"**: lista de sus tickets ordenada por urgencia (SLA/compromiso más próximo primero), con los 3 botones de acción.
-- **Gestor — "Bandeja"**: arriba las propuestas pendientes de decisión (aceptar/rechazar en un clic), abajo todos los tickets con filtros por estado, área, asignado.
-- **Detalle de ticket**: datos + línea de tiempo (creación, asignaciones, propuestas, decisiones, escalamientos, cierre) + semáforo SLA.
+## Adjuntos
+- RF-04.14 Se pueden adjuntar **imágenes y PDF** (hasta 5 archivos de 10 MB por acción) al crear el
+  ticket, al enviar una propuesta y en los comentarios del Gestor.
+- RF-04.15 Los archivos se guardan en un almacenamiento compatible con S3 dentro del despliegue y
+  solo se descargan a través de la aplicación, por personas que pueden ver el ticket.
+
+## Visibilidad
+- RF-04.16 El Usuario ve únicamente los tickets que tiene asignados. Admin y Gestor ven todos.
+
+## Vistas
+- **Usuario, "Mis actividades"**: sus tickets ordenados por plazo (el más próximo primero), con el
+  semáforo y las 4 acciones.
+- **Gestor, "Bandeja"**: arriba las propuestas por decidir (aceptar o rechazar); abajo todos los
+  tickets con filtros por estado, área y asignado, y búsqueda por folio o título.
+- **Detalle de ticket**: datos, semáforo, línea de tiempo (creación, asignaciones, propuestas,
+  decisiones, comentarios, cierre y reapertura) con sus adjuntos, y las acciones según el rol.
 
 ## Criterios de aceptación
-- Crear ticket con los campos obligatorios → estado Asignado, SLA corriendo, aparece en "Mis actividades" del asignado.
+- Crear ticket con los campos obligatorios → folio asignado, estado Asignado, SLA corriendo, aparece en "Mis actividades" del asignado.
 - Usuario propone actualización → aparece en la bandeja del Gestor; el Usuario no puede enviar otra mientras esté pendiente.
 - Gestor rechaza sin comentario → no se permite.
+- Gestor acepta actualización → estado En seguimiento con la fecha propuesta como compromiso.
+- Usuario propone enviar a otra área → al aceptar, el Gestor debe elegir a una persona de esa área; el SLA se reinicia con el horario de esa área.
+- Ticket cerrado → el Gestor lo reabre con comentario y vuelve a Asignado con la última persona.
+- Un Usuario intenta abrir un ticket que no tiene asignado → no lo encuentra.
 - Gestor acepta cierre "Resuelto" con correo de cliente → se dispara encuesta (06).
 
-## Preguntas abiertas
-0. Reasignación a un compañero del mismo nivel o envío a otra área: ¿quién la solicita y quién la aprueba?
-1. ¿Adjuntos (fotos, PDFs) en ticket o en propuestas?
-2. ¿Folio visible tipo `OD-000123`?
-3. ¿Un ticket cerrado se puede **reabrir**?
-4. ¿Las propuestas de un Usuario las aprueba cualquier Gestor o solo quien creó el ticket? v1 propone cualquier Gestor.
+## Decisiones
+- La reasignación a un compañero o a otra área la **solicita el Usuario** y la **aprueba el Gestor**.
+  Para otra área, el Gestor elige a la persona al aprobar.
+- Adjuntos en v1, almacenados en SeaweedFS (compatible con S3, Apache-2.0).
+- Folio visible `OD-000123`.
+- Un ticket cerrado se puede reabrir, solo por el Gestor.
+- Cualquier Gestor o Admin decide las propuestas, no solo quien creó el ticket.

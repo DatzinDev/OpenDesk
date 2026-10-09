@@ -29,6 +29,5 @@ por niveles fácil de leer.
 - Persona en nivel 3 cambia a un área con 2 niveles sin indicar nivel → queda en nivel 1.
 - Área de 3 niveles con alguien en el nivel 3 se intenta reducir a 2 → error que indica el nivel ocupado.
 
-## Evolución prevista
-La reasignación a un compañero del mismo nivel o el envío a otra área se definirán en el módulo de
-tickets (04).
+## Relación con tickets
+La reasignación a un compañero o a otra área la propone el Usuario y la aprueba el Gestor (RF-04.4 y RF-04.7).

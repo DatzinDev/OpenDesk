@@ -8,6 +8,7 @@
 | Persistencia | PostgreSQL 16, SQLAlchemy 2, Alembic | Base relacional robusta; migraciones versionadas. |
 | Autenticación | Google OpenID Connect (Authlib) | Sin contraseñas propias; la identidad la garantiza Google. |
 | Sesión | Cookie `HttpOnly` con token opaco; hash almacenado en BD | Revocable desde el servidor, sin JWT en el navegador. |
+| Adjuntos | SeaweedFS (compatible con S3) + boto3 | Almacenamiento de objetos open source dentro del mismo despliegue; bucket privado. |
 | Correo | SMTP (`smtplib` de la biblioteca estándar) + plantillas Jinja2 | Compatible con Google Workspace o cualquier proveedor SMTP. |
 | Frontend | React 18, TypeScript, Vite | Ecosistema maduro, tipado estricto, recarga rápida. |
 | UI | Mantine 7 (+ `@mantine/dates`, `@mantine/charts`) | Biblioteca completa de componentes accesibles; permite elegir el control adecuado para cada dato. |
@@ -21,6 +22,7 @@
 |---|---|---|
 | `db` | PostgreSQL 16 con volumen persistente | interno |
 | `api` | FastAPI (uvicorn); aplica migraciones al iniciar | interno (8000) |
+| `storage` | SeaweedFS (`weed mini`) con API S3 y volumen persistente; guarda los adjuntos | interno (8333) |
 | `web` | Servidor Vite; sirve la SPA y redirige `/api` hacia `api` | **8080** |
 
 La aplicación se expone en un solo origen (`APP_URL`, por defecto `http://localhost:8080`), por lo que
@@ -39,6 +41,7 @@ Ver `.env.example`. Las credenciales nunca se exponen en la interfaz.
 | `MAIL_*` | Servidor SMTP y remitente. |
 | `ADMIN_EMAIL` | Cuenta del Admin principal (inmutable desde la aplicación). |
 | `APP_TIMEZONE` | Zona horaria para el cálculo de SLA (por defecto `America/Mexico_City`). |
+| `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET` | Credenciales y bucket del almacenamiento de adjuntos. |
 | `DEV_SEED` | `true` ejecuta `api/seeds/dev.sql` al iniciar: datos ficticios idempotentes para pruebas. |
 
 ## 2. Arquitectura general
@@ -66,13 +69,16 @@ api/
 │   │   └── db.py             engine, sesión y Base declarativa
 │   ├── shared/               elementos transversales genuinos
 │   │   ├── events.py         bus de eventos en proceso (publish / subscribe)
-│   │   └── mailer.py         envío SMTP y render de plantillas
+│   │   ├── mailer.py         envío SMTP y render de plantillas
+│   │   └── storage.py        cliente S3 para adjuntos (bucket privado, descarga vía API)
 │   └── modules/
 │       ├── identity/         login con Google, sesiones, /me; expone current_user y require_roles
 │       ├── users/            alta, edición, desactivación y reglas de rol
 │       ├── audit/            bitácora de eventos
 │       ├── notifications/    reacciona a eventos y envía correos / avisos en sistema
-│       └── …                 areas, tickets, surveys, analytics (módulos posteriores)
+│       ├── areas/            áreas, horario, festivos y cálculo del SLA
+│       ├── tickets/          tickets, propuestas, decisiones, línea de tiempo y adjuntos
+│       └── …                 surveys, analytics (módulos posteriores)
 └── tests/
 ```
 
@@ -147,7 +153,9 @@ web/src/
     │   ├── components/       componentes internos
     │   ├── pages/            vistas enrutables
     │   └── index.ts          API pública de la feature
-    └── users/                misma forma
+    ├── users/                misma forma
+    ├── areas/
+    └── tickets/              bandeja, mis actividades y detalle de ticket
 ```
 
 ### Reglas de dependencia

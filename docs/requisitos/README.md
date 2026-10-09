@@ -13,7 +13,7 @@ Documentos relacionados: [Stack y arquitectura](../arquitectura.md) · [Diseño]
 | 01 | Acceso, usuarios y roles | [01-acceso-usuarios-roles.md](01-acceso-usuarios-roles.md) | Validado |
 | 02 | Áreas y SLA | [02-areas-sla.md](02-areas-sla.md) | En desarrollo |
 | 03 | Matriz de escalamiento | [03-matriz-responsables.md](03-matriz-responsables.md) | En desarrollo |
-| 04 | Tickets y flujo | [04-tickets.md](04-tickets.md) | Pendiente |
+| 04 | Tickets y flujo | [04-tickets.md](04-tickets.md) | En desarrollo |
 | 05 | Notificaciones | [05-notificaciones.md](05-notificaciones.md) | Pendiente |
 | 06 | Encuesta de satisfacción | [06-encuesta.md](06-encuesta.md) | Pendiente |
 | 07 | Analítica | [07-analitica.md](07-analitica.md) | Pendiente |
@@ -26,7 +26,8 @@ Documentos relacionados: [Stack y arquitectura](../arquitectura.md) · [Diseño]
 - Envío de correo por SMTP (compatible con Google Workspace) para cada acción relevante.
 - 3 roles fijos: Administrador, Gestor, Usuario.
 - Áreas con SLA y horario de atención propios, prioridad informativa en tickets, matriz de escalamiento por niveles, auto-escalamiento.
-- Flujo de propuesta/aprobación (actualizar, escalar, cerrar).
+- Flujo de propuesta/aprobación (actualizar, escalar, reasignar, cerrar), folio visible y reapertura por el Gestor.
+- Adjuntos (imágenes y PDF) en almacenamiento compatible con S3 dentro del despliegue.
 - Notificaciones en sistema + correo, recordatorio 24 h antes de fecha comprometida.
 - Encuesta de satisfacción por correo al cliente al cerrar exitosamente.
 - Dashboard de analítica en tiempo (casi) real.
@@ -35,7 +36,6 @@ Documentos relacionados: [Stack y arquitectura](../arquitectura.md) · [Diseño]
 **Fuera (v1)**
 - Portal para que el cliente final cree tickets (el ticket lo crea el Gestor).
 - Roles/permisos configurables, campos personalizados, formularios dinámicos.
-- Adjuntos de archivos (ver pregunta abierta en 04).
 - Integraciones (Slack, Teams, WhatsApp), app móvil, multi-idioma, multi-empresa.
 
 ## Orden de construcción propuesto
@@ -55,7 +55,7 @@ Cada paso se entrega corriendo en Docker para revisión antes de pasar al siguie
 - **Gestor**: quien crea, asigna y aprueba/rechaza acciones sobre tickets.
 - **Usuario**: quien atiende el ticket asignado.
 - **Nivel de escalamiento**: posición de un usuario dentro de su área (1 = primer contacto); los tickets escalan al siguiente nivel.
-- **Propuesta**: acción enviada por el Usuario (actualización, escalamiento o cierre) que
+- **Propuesta**: acción enviada por el Usuario (actualización, escalamiento, reasignación o cierre) que
   queda pendiente de decisión del Gestor.
 - **SLA de primera respuesta**: tiempo máximo desde la asignación hasta que el Gestor
   **acepta** la primera propuesta del Usuario.

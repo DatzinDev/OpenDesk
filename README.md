@@ -40,7 +40,7 @@ OpenDesk cubre exactamente ese flujo, con una interfaz pensada para usarse todo 
 ```mermaid
 flowchart LR
     G[Gestor crea y asigna el ticket] -->|inicia el SLA y envía correo| U[Usuario]
-    U -->|actualización con fecha, escalamiento o cierre| P{Gestor revisa}
+    U -->|actualización con fecha, escalamiento, reasignación o cierre| P{Gestor revisa}
     P -->|acepta| S[Seguimiento / escalado / cerrado]
     P -->|rechaza con comentario| U
     S -->|cierre exitoso| E[Encuesta de satisfacción al cliente]
@@ -52,9 +52,9 @@ flowchart LR
 | Módulo | Descripción | Estado |
 |---|---|:-:|
 | Acceso y usuarios | Inicio de sesión con Google, roles Admin / Gestor / Usuario, auditoría y correos de cuenta | ✅ |
-| Áreas y SLA | Tiempo de primera respuesta y horario de atención por área | 🔜 |
-| Matriz de escalamiento | Niveles por área; el ticket sube al siguiente nivel con menor carga | 🔜 |
-| Tickets | Formulario breve, propuestas del usuario y aprobación del gestor | 🔜 |
+| Áreas y SLA | Tiempo de primera respuesta y horario de atención por área | 🚧 |
+| Matriz de escalamiento | Niveles por área; el ticket sube al siguiente nivel con menor carga | 🚧 |
+| Tickets | Formulario breve, propuestas del usuario (actualizar, escalar, reasignar, cerrar), aprobación del gestor y adjuntos | 🚧 |
 | Notificaciones | Avisos en la aplicación y por correo, recordatorios de fechas compromiso | 🔜 |
 | Encuesta | Calificación del cliente con un solo clic desde el correo | 🔜 |
 | Analítica | KPIs, tendencias y cumplimiento de SLA en tiempo real | 🔜 |
@@ -92,6 +92,7 @@ La cuenta definida en `ADMIN_EMAIL` es el Administrador principal y puede dar de
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_USE_TLS` | Servidor SMTP |
 | `MAIL_FROM` / `MAIL_FROM_NAME` | Remitente de los correos |
 | `ADMIN_EMAIL` | Correo del Administrador principal |
+| `S3_ACCESS_KEY` / `S3_SECRET_KEY` / `S3_BUCKET` | Credenciales del almacenamiento de adjuntos (servicio `storage`, SeaweedFS) |
 | `DEV_SEED` | `true` para cargar datos ficticios de prueba al iniciar |
 
 ### Producción
@@ -114,8 +115,8 @@ dependencia entre módulos se verifican automáticamente. Así, cualquier módul
 adelante como servicio independiente. El detalle está en [docs/arquitectura.md](docs/arquitectura.md).
 
 ```
-api/app/modules/   identity · users · audit · notifications · …
-web/src/features/  auth · users · home · …
+api/app/modules/   identity · users · areas · tickets · audit · notifications · …
+web/src/features/  auth · users · areas · tickets · …
 ```
 
 ## Desarrollo
@@ -126,7 +127,7 @@ docker compose exec api pytest -q     # pruebas del backend
 ```
 
 En desarrollo, `DEV_SEED=true` (valor por defecto en `compose.yml`) carga al iniciar las áreas, personas,
-matriz de escalamiento y días festivos ficticios de [`api/seeds/dev.sql`](api/seeds/dev.sql). La carga es
+matriz de escalamiento, días festivos y tickets ficticios de [`api/seeds/dev.sql`](api/seeds/dev.sql). La carga es
 idempotente. En producción se controla con la misma variable en `.env` (por defecto `false`).
 
 Las convenciones de commits, el flujo de trabajo y el historial de decisiones están en la
