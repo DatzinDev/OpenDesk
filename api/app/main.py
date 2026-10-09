@@ -7,10 +7,11 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.core import config
 from app.core.db import SessionLocal
 from app.shared import storage
-from app.modules import audit, identity, notifications, users
+from app.modules import audit, identity, notifications, surveys, users
 from app.modules.areas.router import router as areas_router
 from app.modules.identity.router import router as identity_router
 from app.modules.notifications.router import router as notifications_router
+from app.modules.surveys.router import router as surveys_router
 from app.modules.tickets.router import router as tickets_router
 from app.modules.users.router import router as users_router
 
@@ -20,6 +21,7 @@ async def lifespan(_: FastAPI):
     audit.register()
     identity.register()
     notifications.register()
+    surveys.register()
     with SessionLocal() as db:
         users.ensure_root(db, config.ADMIN_EMAIL)
     storage.ensure_bucket()
@@ -47,3 +49,4 @@ app.include_router(users_router)
 app.include_router(areas_router)
 app.include_router(tickets_router)
 app.include_router(notifications_router)
+app.include_router(surveys_router)

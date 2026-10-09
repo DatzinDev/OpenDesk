@@ -1,5 +1,5 @@
 from app.core.db import SessionLocal
-from app.modules import areas, identity, tickets, users
+from app.modules import areas, identity, surveys, tickets, users
 from app.modules.audit.models import AuditEntry
 from app.shared.events import subscribe
 from app.shared.mailer import MailFailed
@@ -24,4 +24,5 @@ def register() -> None:
     subscribe(areas.HolidaysChanged, lambda e: record(
         "holiday.removed" if e.removed else "holiday.added", e.actor_id, "holiday", e.day, {"name": e.name}))
     subscribe(tickets.TicketChanged, lambda e: record(f"ticket.{e.kind}", e.actor_id, "ticket", e.ticket_id, e.data))
+    subscribe(surveys.SurveyAnswered, lambda e: record("survey.answered", None, "ticket", e.ticket_id, {"rating": e.rating}))
     subscribe(MailFailed, lambda e: record("mail.failed", data={"to": e.to, "subject": e.subject, "error": e.error}))
