@@ -12,7 +12,8 @@ Todo en una sola plataforma open source que puedes desplegar en tu propia infrae
 [Requisitos](docs/requisitos/README.md) ·
 [Arquitectura](docs/arquitectura.md) ·
 [Diseño](docs/diseno.md) ·
-[Bitácora](docs/bitacora.md)
+[Bitácora](docs/bitacora.md) ·
+[Cambios](CHANGELOG.md)
 
 ![Python](https://img.shields.io/badge/Python-3.12-0b1d3a?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.142-0b1d3a?logo=fastapi&logoColor=white)
@@ -20,7 +21,7 @@ Todo en una sola plataforma open source que puedes desplegar en tu propia infrae
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-0b1d3a?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-0b1d3a?logo=docker&logoColor=white)
 ![Licencia](https://img.shields.io/badge/licencia-AGPL--3.0-0b1d3a)
-![Estado](https://img.shields.io/badge/estado-en%20desarrollo-ff8e3c)
+![Versión](https://img.shields.io/badge/versi%C3%B3n-0.1.0-ff8e3c)
 
 </div>
 
@@ -57,7 +58,7 @@ flowchart LR
 | Tickets | Formulario breve, propuestas del usuario (actualizar, escalar, reasignar, cerrar), aprobación del gestor y adjuntos | ✅ |
 | Notificaciones | Campana de avisos y correo, auto-escalamiento por SLA vencido, recordatorios y cronómetro de plazos | ✅ |
 | Encuesta | Calificación del cliente con un solo clic desde el correo | ✅ |
-| Analítica | Seis tableros (resumen, tiempos y SLA, equipo, flujo, clientes y demanda), vista personal y exportación a CSV | 🚧 |
+| Analítica | Seis tableros (resumen, tiempos y SLA, equipo, flujo, clientes y demanda), vista personal y exportación a CSV | ✅ |
 
 ### Roles
 
