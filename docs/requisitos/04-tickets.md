@@ -66,6 +66,13 @@ Cualquier Gestor o Admin puede decidir cualquier propuesta.
 - RF-04.11 Toda asignación (creación, escalamiento, reasignación o reapertura) reinicia el SLA con la
   configuración vigente del área destino y descarta la fecha compromiso anterior.
 
+## Edición
+- RF-04.20 El Gestor, el Admin y el Usuario asignado pueden **editar** los datos descriptivos de un ticket
+  abierto: título, descripción, prioridad, nombre y correo del cliente. El área y la persona asignada solo
+  cambian mediante reasignación, para que el SLA se reinicie correctamente.
+- RF-04.21 Cada edición queda en el historial con los campos modificados y sus valores anterior y nuevo;
+  para la descripción solo se indica que cambió.
+
 ## Estatus de seguimiento
 - RF-04.17 Existe un **catálogo global de estatus de seguimiento** (por ejemplo, "Esperando al cliente" o
   "Con proveedor"), editable por Admin y Gestor en la pestaña **Estatus** de la sección Áreas. Los estatus
@@ -75,7 +82,7 @@ Cualquier Gestor o Admin puede decidir cualquier propuesta.
 
 ## Historial
 - RF-04.19 El historial muestra solo el progreso del ticket: creación, asignaciones, propuestas con su
-  descripción, decisiones, cambios de estatus, cierre y reapertura. No admite comentarios sueltos.
+  descripción, decisiones, ediciones, cambios de estatus, cierre y reapertura. No admite comentarios sueltos.
 
 ## Plazos
 - RF-04.12 El plazo vigente es el SLA de primera respuesta o, tras aceptar una actualización, la
