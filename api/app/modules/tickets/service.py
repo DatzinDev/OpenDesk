@@ -161,8 +161,22 @@ def _escalate(db: Session, t: Ticket, actor_id: int | None, reason: str = "escal
     _move(db, t, actor_id, min(candidates, key=lambda u: (load.get(u.id, 0), u.name)), reason)
 
 
-def _close(t: Ticket, outcome: str) -> None:
-    t.status, t.outcome, t.closed_at, t.needs_manager = "cerrado", outcome, now(), False
+def _close(t: Ticket, outcome: str) -> dict:
+    """Cierra y devuelve los datos de cumplimiento para la analítica (07)."""
+    at = now()
+    data = {"outcome": outcome, "committed": t.committed}
+    if t.committed:
+        data["commitment_met"] = at <= _utc(t.due_at)
+    t.status, t.outcome, t.closed_at, t.needs_manager = "cerrado", outcome, at, False
+    return data
+
+
+def _first_response(t: Ticket) -> dict:
+    """Primera respuesta aceptada de la asignación vigente: minutos y si cumplió el SLA (07)."""
+    if t.committed:
+        return {}
+    at = now()
+    return {"first_response_min": int((at - _utc(t.due_from)).total_seconds() // 60), "sla_met": at <= _utc(t.due_at)}
 
 
 def _cancel_pending(db: Session, t: Ticket) -> None:
@@ -379,6 +393,7 @@ def accept(db: Session, actor: users.UserOut, ticket_id: UUID, event_id: UUID, d
         else:
             target = _person(db, p.data["user_id"], t.area_id)
     p.state, p.decided_by, p.decision_comment = "accepted", actor.id, data.comment.strip()
+    p.data = {**p.data, **_first_response(t)}
     if p.kind == "update":
         t.due_from, t.due_at, t.committed, t.status = now(), datetime.fromisoformat(p.data["due_at"]).astimezone(timezone.utc), True, "seguimiento"
         t.reminded = t.overdue_notified = False
@@ -387,8 +402,7 @@ def accept(db: Session, actor: users.UserOut, ticket_id: UUID, event_id: UUID, d
     elif p.kind == "reassign":
         _move(db, t, actor.id, target, "reassign")
     else:
-        p.data = {**p.data, "outcome": data.outcome}
-        _close(t, data.outcome)
+        p.data = {**p.data, **_close(t, data.outcome)}
     return _done(db, actor.id, t, "accepted", {"proposal": p.kind, "proposer_id": p.actor_id, "outcome": data.outcome})
 
 
@@ -416,8 +430,7 @@ def close(db: Session, actor: users.UserOut, ticket_id: UUID, data: CloseIn) -> 
     t = _visible(db, actor, ticket_id)
     _open(t)
     _cancel_pending(db, t)
-    _close(t, data.outcome)
-    _event(db, t, "closed", actor.id, data.comment, {"outcome": data.outcome})
+    _event(db, t, "closed", actor.id, data.comment, _close(t, data.outcome))
     return _done(db, actor.id, t, "closed", {"outcome": data.outcome, "to": t.assignee_id})
 
 
