@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAreas } from "@/features/areas";
 import { useMe } from "@/features/auth";
+import { SurveyCard } from "@/features/surveys";
 import { ActionModal, type StaffAction } from "../components/ActionModal";
 import { DueLabel, ManagerFlag, PriorityBadge, StatusBadge, dateFmt } from "../components/Badges";
 import { ProposalDrawer } from "../components/ProposalDrawer";
@@ -110,6 +111,8 @@ export function TicketPage() {
                 {t.closed_at && <Field label="Cerrado">{dateFmt.format(new Date(t.closed_at))}</Field>}
               </Stack>
             </Paper>
+
+            {closed && <SurveyCard ticketId={t.id} />}
 
             {staff && (
               <Stack gap="xs">
