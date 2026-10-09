@@ -2,6 +2,12 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-09 — Versión 0.1.0
+
+- Módulo 07 (analítica) y datos de prueba completos validados y publicados en `main`.
+- Primera versión etiquetada: `v0.1.0`, con su release en GitHub. El resumen de lo incluido está en `CHANGELOG.md`.
+- Pendiente para la siguiente versión: módulo 08 (auditoría y parámetros).
+
 ## 2026-10-09 — Fase 6: analítica
 
 **Cambios**
