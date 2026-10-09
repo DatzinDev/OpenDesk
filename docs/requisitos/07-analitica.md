@@ -51,8 +51,10 @@ atención a clientes. Cada pestaña atiende un tipo de análisis distinto.
 | Clientes recurrentes | Clientes (por nombre, o por correo si no hay nombre) con más de un ticket creado en el periodo. |
 | Mapa de calor | Tickets creados por día de la semana y hora local. |
 
-Los tiempos se miden en horas de reloj, no en horas hábiles; el vencimiento del SLA sí respeta el horario de
-cada área.
+Los tiempos de primera respuesta y de resolución se miden en **horas hábiles**: descuentan lo que queda fuera
+del horario del área del ticket y, si el área pausa en festivos, esos días. La antigüedad de los abiertos se
+mide en tiempo natural. Las primeras respuestas registradas antes de esta regla solo tienen horas naturales y se
+usan tal cual.
 
 ## Pestañas
 - **Resumen**: KPI de la tabla anterior; creados vs cerrados por día; evolución del backlog (abiertos al
@@ -81,3 +83,4 @@ cada área.
 - Se agregan indicadores que no estaban en la propuesta original, comunes en atención a clientes: percentil 90 de los tiempos, antigüedad de los abiertos, tasa de rechazo, reaperturas, envíos entre áreas, clientes recurrentes y mapa de calor de la demanda.
 - El cumplimiento del SLA y del compromiso se registra al momento de la decisión, porque el plazo cambia con cada asignación y no se puede reconstruir después.
 - Las métricas se calculan al consultar, sin tablas de resumen; es suficiente para miles de tickets.
+- Horas hábiles para los tiempos, para no castigar a un área por las noches y fines de semana en que no atiende.

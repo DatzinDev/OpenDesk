@@ -5,7 +5,8 @@ Informar oportunamente a cada participante, dentro de la aplicación y por corre
 
 ## Canales
 - **En sistema**: campana con contador de no leídos y lista de los últimos 30 avisos; un clic lleva al ticket
-  y marca el aviso como leído. También se pueden marcar todos como leídos. La lista se actualiza cada 30 s.
+  y marca el aviso como leído. También se pueden marcar todos como leídos. Los avisos llegan **al instante**
+  (Server-Sent Events) y, al llegar, se actualizan también las listas de tickets abiertas en pantalla.
 - **Correo**: enviado por SMTP con el remitente definido en `MAIL_FROM` / `MAIL_FROM_NAME`.
   Cada correo incluye un botón hacia la vista correspondiente y la firma de OpenDesk / Datzin.
 - Regla general: toda acción relevante genera correo, salvo los eventos marcados como solo en sistema.

@@ -137,6 +137,13 @@ Cada tabla tiene dos identificadores con propósitos distintos:
 5. `core` y `shared` no importan nada de `modules`.
 6. `tests/test_architecture.py` verifica las reglas 1, 2 y 5 en cada ejecución de pruebas.
 
+### Avisos en tiempo real
+
+Al guardar avisos, `notifications` ejecuta `pg_notify('opendesk_notify', <id de la persona>)` dentro de la misma
+transacción. El endpoint `GET /api/notifications/stream` (Server-Sent Events) abre una conexión propia con
+`LISTEN` y emite `refresh` a la persona correspondiente. Así los avisos generados por el `worker`, que es otro
+proceso, también llegan al instante. nginx sirve esa ruta sin búfer.
+
 ### Excepción de lectura: `analytics`
 
 `analytics` es un modelo de lectura para reportes. Puede consultar con `SELECT` las tablas de otros módulos,

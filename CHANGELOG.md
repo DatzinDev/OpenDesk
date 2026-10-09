@@ -13,6 +13,11 @@ Todos los cambios relevantes de OpenDesk se documentan en este archivo. El forma
   - Para el Admin: dominio permitido y zona horaria.
   - Botón para enviar un correo de prueba.
 - Pantalla de **Auditoría** para el Administrador, con filtros por persona, tipo de evento y fechas.
+- Avisos **instantáneos** en la campana; las listas de tickets en pantalla se actualizan solas.
+- Paginación de la Bandeja, de 50 en 50, con el total de tickets.
+
+### Cambiado
+- La analítica mide la primera respuesta y la resolución en **horas hábiles** del área.
 
 ## [0.1.0] — 2026-10-09
 

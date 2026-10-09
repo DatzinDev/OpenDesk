@@ -103,7 +103,7 @@ Cualquier Gestor o Admin puede decidir cualquier propuesta.
 - **Usuario, "Mis actividades"**: sus tickets ordenados por plazo (el más próximo primero), con el
   semáforo y las 4 acciones.
 - **Gestor, "Bandeja"**: arriba las propuestas por decidir (aceptar o rechazar); abajo todos los
-  tickets con filtros por estado, área y asignado, y búsqueda por folio o título.
+  tickets con filtros por estado, área y asignado, y búsqueda por folio o título, paginados de 50 en 50 con el total visible.
 - **Detalle de ticket**: datos, semáforo, línea de tiempo (creación, asignaciones, propuestas,
   decisiones, cambios de estatus, cierre y reapertura) con sus adjuntos, el estatus de seguimiento y las
   acciones según el rol.
