@@ -3,10 +3,10 @@ from datetime import datetime
 from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.db import Base, now
+from app.core.db import Base, PublicId, now
 
 
-class Ticket(Base):
+class Ticket(PublicId, Base):
     __tablename__ = "tickets_tickets"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -35,7 +35,7 @@ class Ticket(Base):
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
-class TrackingStatus(Base):
+class TrackingStatus(PublicId, Base):
     """Catálogo global de estatus de seguimiento (p. ej. "Esperando al cliente")."""
     __tablename__ = "tickets_statuses"
 
@@ -44,7 +44,7 @@ class TrackingStatus(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
-class Event(Base):
+class Event(PublicId, Base):
     """Línea de tiempo del ticket. Las propuestas del Usuario son eventos con `state`."""
     __tablename__ = "tickets_events"
     # Una sola propuesta pendiente por ticket, garantizado por la base de datos.
@@ -63,7 +63,7 @@ class Event(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
-class Attachment(Base):
+class Attachment(PublicId, Base):
     __tablename__ = "tickets_attachments"
 
     id: Mapped[int] = mapped_column(primary_key=True)

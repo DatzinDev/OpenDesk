@@ -3,10 +3,10 @@ from datetime import date, datetime
 from sqlalchemy import JSON, Boolean, Date, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.db import Base, now
+from app.core.db import Base, PublicId, now
 
 
-class Area(Base):
+class Area(PublicId, Base):
     __tablename__ = "areas_areas"
 
     id: Mapped[int] = mapped_column(primary_key=True)

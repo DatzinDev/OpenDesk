@@ -3,10 +3,10 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.db import Base, now
+from app.core.db import Base, PublicId, now
 
 
-class Notification(Base):
+class Notification(PublicId, Base):
     """Aviso en sistema (campana)."""
     __tablename__ = "notifications_notifications"
     __table_args__ = (Index("ix_notifications_user_created", "user_id", "created_at"),)
