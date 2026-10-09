@@ -2,6 +2,31 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-08 — Fase 4: notificaciones, auto-escalamiento y estatus de seguimiento
+
+**Cambios**
+- Tickets:
+  - Se retira la acción "Comentar". El historial muestra solo el progreso del ticket.
+  - Catálogo global de **estatus de seguimiento**, editable en Áreas › Estatus. El Gestor los asigna desde el detalle del ticket y cada cambio queda en el historial.
+- Notificaciones:
+  - Campana de avisos en la barra lateral, con contador de no leídos y acceso directo al ticket.
+  - Correos por asignación, propuesta enviada, propuesta aceptada o rechazada, intervención del Gestor, recordatorio y compromiso vencido.
+- Nuevo contenedor `worker` que revisa los plazos cada minuto:
+  - Aviso al consumir el 80 % del SLA.
+  - Auto-escalamiento cuando vence el SLA.
+  - Recordatorio antes de la fecha compromiso.
+  - Aviso cuando vence el compromiso.
+- Cronómetro del tiempo restante del SLA o de la fecha compromiso en listas y detalle.
+- Los plazos se guardan siempre en UTC.
+
+**Decisiones**
+- Un correo a los Gestores por cada propuesta. El cliente no recibe copia de los cambios.
+- Quien realiza una acción no recibe aviso de ella.
+- La anticipación del recordatorio se define con `REMINDER_HOURS` hasta que exista la pantalla de parámetros (08).
+
+**Pendientes**
+- Encuesta de satisfacción (06), analítica (07) y pantalla de auditoría y parámetros (08).
+
 ## 2026-10-08 — Fase 3: tickets y flujo
 
 **Cambios**
