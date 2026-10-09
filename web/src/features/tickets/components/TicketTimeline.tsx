@@ -4,6 +4,7 @@ import {
   IconArrowsExchange,
   IconCalendarEvent,
   IconCircleCheck,
+  IconCircleDot,
   IconFileText,
   IconPlus,
   IconRefresh,
@@ -15,7 +16,7 @@ import { useAreas } from "@/features/areas";
 import { OUTCOME_LABELS, type TicketDetail, type TicketEvent } from "../types";
 import { dateFmt } from "./Badges";
 
-const ICONS: Record<TicketEvent["kind"], Icon> = {
+const ICONS: Partial<Record<string, Icon>> = {
   created: IconPlus,
   update: IconCalendarEvent,
   escalate: IconTrendingUp,
@@ -74,15 +75,18 @@ export function TicketTimeline({ ticket }: { ticket: TicketDetail }) {
         return `${by} reabrió el ticket`;
       case "commitment_overdue":
         return "Venció la fecha compromiso sin cierre";
-      default:
+      case "needs_manager":
         return "No hay un nivel superior con personas. Requiere intervención del Gestor.";
+      default:
+        return `${by} comentó`;
     }
   };
 
   return (
     <Timeline bulletSize={28} lineWidth={2}>
       {ticket.events.map((e) => {
-        const Icon = ICONS[e.kind];
+        // Tipos de evento antiguos o desconocidos (p. ej. comentarios previos) se muestran sin romper la vista.
+        const Icon = ICONS[e.kind] ?? IconCircleDot;
         const state = e.state ? STATE[e.state] : null;
         return (
           <Timeline.Item
