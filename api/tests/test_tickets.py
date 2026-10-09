@@ -113,3 +113,39 @@ def test_inbox_pagination(db, env):
     last = t.page_for(db, root, 3, 2, status="abiertos")
     assert first.total == 5 and len(first.items) == 2 and len(last.items) == 1
     assert not {x.id for x in first.items} & {x.id for x in last.items}
+
+
+def test_custom_fields_create_edit_and_history(db, env):
+    from uuid import uuid4
+    from app.modules.settings import form
+    root, ana, *_, new = env
+    historical = new()
+    field_id = str(uuid4())
+    saved = form.save(db, root, form.FormDefinition(fields=[{"id": field_id, "label": "Contrato", "type": "text", "required": True}]))
+    # Un ticket anterior puede seguir sin respuesta en un campo que ahora es obligatorio.
+    assert t.update(db, root, historical.id, TicketUpdate(title="Actualizado", custom_values={}, form_revision=saved.revision)).title == "Actualizado"
+    with pytest.raises(form.Conflict):
+        new()
+    with pytest.raises(ValueError):
+        t.create(db, root, TicketIn(title="Sin dato", description="x", area_id=historical.area_id, assignee_id=ana.uuid, form_revision=saved.revision))
+    tk = t.create(db, root, TicketIn(title="Nuevo", description="x", area_id=historical.area_id, assignee_id=ana.uuid,
+                                    custom_values={field_id: "A"}, form_revision=saved.revision))
+    assert tk.custom_values == {field_id: "A"}
+    tk = t.update(db, ana, tk.id, TicketUpdate(custom_values={field_id: "B"}, form_revision=saved.revision))
+    assert tk.events[-1].data["custom_changes"] == [{"id": field_id, "label": "Contrato", "before": "A", "after": "B"}]
+    with pytest.raises(ValueError):
+        t.update(db, ana, tk.id, TicketUpdate(custom_values={field_id: None}, form_revision=saved.revision))
+    saved.fields[0].active = False
+    form.save(db, root, saved)
+    assert t.detail(db, root, tk.id).custom_values[field_id] == "B"
+
+
+def test_update_checks_form_revision_without_custom_values(db, env):
+    from app.modules.settings import form
+    root, *_, new = env
+    tk = new()
+    definition = form.read(db)
+    definition.system[0].label = "Asunto"
+    form.save(db, root, definition)
+    with pytest.raises(form.Conflict):
+        t.update(db, root, tk.id, TicketUpdate(title="Nuevo", form_revision=0))
