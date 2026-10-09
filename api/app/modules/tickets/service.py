@@ -1,6 +1,6 @@
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
@@ -102,21 +102,35 @@ def _assign(db: Session, t: Ticket, user: users.UserOut) -> None:
     """Toda asignación reinicia el SLA con la configuración vigente del área y borra el compromiso."""
     start = now()
     t.assignee_id, t.area_id = user.id, user.area_id
-    t.due_from, t.due_at = start, areas.sla_deadline(db, user.area_id, start)
+    t.due_from, t.due_at = start, areas.sla_deadline(db, user.area_id, start).astimezone(timezone.utc)
     t.committed, t.needs_manager, t.status = False, False, "asignado"
+    t.sla_warned = t.reminded = t.overdue_notified = False
 
 
-def _move(db: Session, t: Ticket, actor_id: int, user: users.UserOut, reason: str, comment: str = "") -> None:
+def _queue(db: Session, t: Ticket, kind: str, actor_id: int | None, data: dict | None = None) -> None:
+    """Eventos que se publican después del commit (avisos, auditoría)."""
+    db.info.setdefault("ticket_outbox", []).append(TicketChanged(actor_id=actor_id, ticket_id=t.id, kind=kind, data=data or {}))
+
+
+def _flush(db: Session) -> None:
+    db.commit()
+    for e in db.info.pop("ticket_outbox", []):
+        publish(e)
+
+
+def _move(db: Session, t: Ticket, actor_id: int | None, user: users.UserOut, reason: str, comment: str = "") -> None:
     prev = t.assignee_id
     _assign(db, t, user)
-    _event(db, t, "assigned", actor_id, comment, {"from": prev, "to": user.id, "area_id": user.area_id, "reason": reason})
+    data = {"from": prev, "to": user.id, "area_id": user.area_id, "reason": reason}
+    _event(db, t, "assigned", actor_id, comment, data)
+    _queue(db, t, "assigned", actor_id, data)
 
 
 def _settle(t: Ticket) -> None:
     t.status = "seguimiento" if t.committed else "asignado"
 
 
-def _escalate(db: Session, t: Ticket, actor_id: int) -> None:
+def _escalate(db: Session, t: Ticket, actor_id: int | None, reason: str = "escalate") -> None:
     """Sube al siguiente nivel con personas del área, a quien tenga menos tickets abiertos (RF-03.4/03.5)."""
     current = users.get(db, t.assignee_id)
     level = current.level if current and current.area_id == t.area_id else 0
@@ -125,11 +139,12 @@ def _escalate(db: Session, t: Ticket, actor_id: int) -> None:
         t.needs_manager = True
         _settle(t)
         _event(db, t, "needs_manager", None)
+        _queue(db, t, "needs_manager", None, {"from": t.assignee_id})
         return
     nxt = min(u.level for u in above)
     candidates = [u for u in above if u.level == nxt]
     load = repo.open_counts(db, [u.id for u in candidates])
-    _move(db, t, actor_id, min(candidates, key=lambda u: (load.get(u.id, 0), u.name)), "escalate")
+    _move(db, t, actor_id, min(candidates, key=lambda u: (load.get(u.id, 0), u.name)), reason)
 
 
 def _close(t: Ticket, outcome: str) -> None:
@@ -142,8 +157,8 @@ def _cancel_pending(db: Session, t: Ticket) -> None:
 
 
 def _done(db: Session, actor_id: int, t: Ticket, kind: str, data: dict | None = None) -> TicketDetail:
-    db.commit()
-    publish(TicketChanged(actor_id=actor_id, ticket_id=t.id, kind=kind, data=data or {}))
+    db.info.setdefault("ticket_outbox", []).insert(0, TicketChanged(actor_id=actor_id, ticket_id=t.id, kind=kind, data=data or {}))
+    _flush(db)
     return _detail(db, t)
 
 
@@ -224,6 +239,7 @@ def create(db: Session, actor: users.UserOut, data: TicketIn, files: list[Upload
     _assign(db, t, user)
     repo.add(db, t)
     _event(db, t, "created", actor.id, data={"to": user.id}, files=files)
+    _queue(db, t, "assigned", actor.id, {"to": user.id, "area_id": user.area_id, "reason": "created"})
     return _done(db, actor.id, t, "created")
 
 
@@ -278,7 +294,8 @@ def accept(db: Session, actor: users.UserOut, ticket_id: int, event_id: int, dat
             target = _person(db, p.data["user_id"], t.area_id)
     p.state, p.decided_by, p.decision_comment = "accepted", actor.id, data.comment.strip()
     if p.kind == "update":
-        t.due_from, t.due_at, t.committed, t.status = now(), datetime.fromisoformat(p.data["due_at"]), True, "seguimiento"
+        t.due_from, t.due_at, t.committed, t.status = now(), datetime.fromisoformat(p.data["due_at"]).astimezone(timezone.utc), True, "seguimiento"
+        t.reminded = t.overdue_notified = False
     elif p.kind == "escalate":
         _escalate(db, t, actor.id)
     elif p.kind == "reassign":
@@ -286,7 +303,7 @@ def accept(db: Session, actor: users.UserOut, ticket_id: int, event_id: int, dat
     else:
         p.data = {**p.data, "outcome": data.outcome}
         _close(t, data.outcome)
-    return _done(db, actor.id, t, "accepted", {"proposal": p.kind})
+    return _done(db, actor.id, t, "accepted", {"proposal": p.kind, "proposer_id": p.actor_id, "outcome": data.outcome})
 
 
 def reject(db: Session, actor: users.UserOut, ticket_id: int, event_id: int, data: DecisionIn) -> TicketDetail:
@@ -295,7 +312,7 @@ def reject(db: Session, actor: users.UserOut, ticket_id: int, event_id: int, dat
         raise Conflict("Escribe el motivo del rechazo.")
     p.state, p.decided_by, p.decision_comment = "rejected", actor.id, data.comment.strip()
     _settle(t)
-    return _done(db, actor.id, t, "rejected", {"proposal": p.kind})
+    return _done(db, actor.id, t, "rejected", {"proposal": p.kind, "proposer_id": p.actor_id, "comment": p.decision_comment})
 
 
 def reassign(db: Session, actor: users.UserOut, ticket_id: int, data: ReassignIn) -> TicketDetail:
@@ -315,7 +332,7 @@ def close(db: Session, actor: users.UserOut, ticket_id: int, data: CloseIn) -> T
     _cancel_pending(db, t)
     _close(t, data.outcome)
     _event(db, t, "closed", actor.id, data.comment, {"outcome": data.outcome})
-    return _done(db, actor.id, t, "closed", {"outcome": data.outcome})
+    return _done(db, actor.id, t, "closed", {"outcome": data.outcome, "to": t.assignee_id})
 
 
 def set_status(db: Session, actor: users.UserOut, ticket_id: int, data: SetStatusIn) -> TicketDetail:
@@ -362,3 +379,46 @@ def reopen(db: Session, actor: users.UserOut, ticket_id: int, data: ReopenIn) ->
     _event(db, t, "reopened", actor.id, data.comment)
     _move(db, t, actor.id, user, "reopen")
     return _done(db, actor.id, t, "reopened")
+
+
+# --- Proceso en segundo plano (RF-05.1) ----------------------------------------------------------
+
+def _utc(dt: datetime) -> datetime:
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
+def sweep(db: Session, at: datetime | None = None) -> None:
+    """Revisa plazos: aviso al 80 % del SLA, auto-escalamiento, recordatorio y compromiso vencido."""
+    at = at or now()
+    for t in repo.open_tickets(db):
+        start, due = _utc(t.due_from), _utc(t.due_at)
+        if not t.committed:
+            if due <= at and not t.needs_manager:
+                _cancel_pending(db, t)
+                _escalate(db, t, None, "auto")
+            elif not t.sla_warned and due > at and at >= start + (due - start) * 0.8:
+                t.sla_warned = True
+                _queue(db, t, "sla_warning", None, {"to": t.assignee_id})
+        elif due <= at and not t.overdue_notified:
+            t.overdue_notified = True
+            _event(db, t, "commitment_overdue", None)
+            _queue(db, t, "commitment_overdue", None, {"to": t.assignee_id})
+        elif not t.reminded and due > at and at >= due - timedelta(hours=config.REMINDER_HOURS):
+            t.reminded = True
+            _queue(db, t, "reminder", None, {"to": t.assignee_id})
+    _flush(db)
+
+
+@dataclass(frozen=True)
+class Summary:
+    id: int
+    folio: str
+    title: str
+    assignee_id: int
+    due_at: datetime
+    committed: bool
+
+
+def summary(db: Session, ticket_id: int) -> Summary | None:
+    t = repo.get(db, ticket_id)
+    return Summary(t.id, folio(t.id), t.title, t.assignee_id, _utc(t.due_at), t.committed) if t else None

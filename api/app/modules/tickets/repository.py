@@ -46,6 +46,10 @@ def status_by_name(db: Session, name: str) -> TrackingStatus | None:
     return db.scalar(select(TrackingStatus).where(TrackingStatus.name.ilike(name)))
 
 
+def open_tickets(db: Session) -> list[Ticket]:
+    return list(db.scalars(select(Ticket).where(Ticket.status.in_(OPEN))))
+
+
 def pending(db: Session, ticket_id: int) -> Event | None:
     return db.scalar(select(Event).where(Event.ticket_id == ticket_id, Event.state == "pending"))
 

@@ -18,6 +18,8 @@ MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "true").lower() == "true"
 
 SECURE_COOKIES = APP_URL.startswith("https://")
 APP_TIMEZONE = os.environ.get("APP_TIMEZONE", "America/Mexico_City")
+# Anticipación del recordatorio de fecha compromiso (RF-05.4); pasará a parámetros globales en 08.
+REMINDER_HOURS = int(os.environ.get("REMINDER_HOURS", "24"))
 
 # Almacenamiento de adjuntos compatible con S3 (SeaweedFS en Docker).
 S3_ENDPOINT = os.environ.get("S3_ENDPOINT", "http://storage:8333")

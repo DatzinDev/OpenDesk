@@ -24,6 +24,10 @@ class Ticket(Base):
     due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     committed: Mapped[bool] = mapped_column(Boolean, default=False)
     needs_manager: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Avisos ya enviados para el plazo vigente; se reinician con cada asignación o compromiso nuevo.
+    sla_warned: Mapped[bool] = mapped_column(Boolean, default=False)
+    reminded: Mapped[bool] = mapped_column(Boolean, default=False)
+    overdue_notified: Mapped[bool] = mapped_column(Boolean, default=False)
     # Estatus de seguimiento elegido por el Gestor del catálogo editable; no altera el flujo.
     status_id: Mapped[int | None] = mapped_column(ForeignKey("tickets_statuses.id"))
     created_by: Mapped[int] = mapped_column(ForeignKey("users_users.id"))
