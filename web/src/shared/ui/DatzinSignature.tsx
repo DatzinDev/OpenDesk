@@ -4,15 +4,18 @@ import logo from "@/shared/assets/datzin-marca.png";
 type Props = { label?: string; inverted?: boolean };
 
 /** Firma de marca: OpenDesk es software de la familia Datzin. */
-export function DatzinSignature({ label = "Software de la familia Datzin", inverted = false }: Props) {
+export function DatzinSignature({ label = "Datzin", inverted = false }: Props) {
   return (
+    <Group gap={6} wrap="wrap">
+    <Anchor href="https://github.com/DatzinDev/OpenDesk" target="_blank" rel="noreferrer" size="xs" c={inverted ? "var(--opendesk-on-primary, white)" : "dimmed"}>OpenDesk</Anchor>
     <Anchor href="https://datzin.com.mx" target="_blank" rel="noreferrer" underline="never">
       <Group gap={8} wrap="nowrap">
-        <Image src={logo} alt="Datzin" w={18} h={18} style={inverted ? { filter: "brightness(0) invert(1)" } : undefined} />
-        <Text size="xs" c={inverted ? "rgba(255,255,255,0.72)" : "dimmed"}>
+        <Image src={logo} alt="Datzin" w={18} h={18} />
+        <Text size="xs" c={inverted ? "var(--opendesk-on-primary, white)" : "dimmed"}>
           {label}
         </Text>
       </Group>
     </Anchor>
+    </Group>
   );
 }

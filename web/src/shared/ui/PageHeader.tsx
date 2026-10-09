@@ -5,7 +5,7 @@ type Props = { title: string; description?: string; action?: ReactNode };
 
 export function PageHeader({ title, description, action }: Props) {
   return (
-    <Group justify="space-between" align="flex-end" mb="lg" wrap="wrap">
+    <Group justify="space-between" align="center" mb="md" wrap="wrap">
       <Stack gap={4}>
         <Title order={1} fz="xl">
           {title}

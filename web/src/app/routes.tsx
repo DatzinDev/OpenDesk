@@ -1,8 +1,8 @@
 import { lazy, Suspense } from "react";
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate, useParams } from "react-router-dom";
 import { AuditPage } from "@/features/audit";
 import { AccessDeniedPage, LoginPage, RequireAuth } from "@/features/auth";
-import { SettingsPage } from "@/features/settings";
+import { SettingsPage, FormBuilderPage } from "@/features/settings";
 import { AreasPage } from "@/features/areas";
 import { SurveyPage } from "@/features/surveys";
 import { InboxPage, MyTicketsPage, TicketPage } from "@/features/tickets";
@@ -12,6 +12,11 @@ import { AppShell } from "./AppShell";
 
 // Analítica incluye la librería de gráficas: se descarga solo al abrir la sección.
 const AnalyticsPage = lazy(() => import("@/features/analytics").then((m) => ({ default: m.AnalyticsPage })));
+
+function TicketRoute() {
+  const { id } = useParams();
+  return <TicketPage key={id} />;
+}
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
@@ -25,7 +30,8 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <HomeRedirect /> },
-      { path: "tickets/:id", element: <TicketPage /> },
+      { path: "tickets/:id", element: <TicketRoute /> },
+      { path: "formularios/:kind", element: <RequireAuth roles={["admin"]}><FormBuilderPage /></RequireAuth> },
       { path: "auditoria", element: <RequireAuth roles={["admin"]}><AuditPage /></RequireAuth> },
       { path: "analitica", element: <Suspense fallback={null}><AnalyticsPage /></Suspense> },
       { path: "mis-actividades", element: <RequireAuth roles={["usuario"]}><MyTicketsPage /></RequireAuth> },

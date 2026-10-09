@@ -61,7 +61,7 @@ export function AuditPage() {
 
   return (
     <>
-      <PageHeader title="Auditoría" description="Registro de solo lectura de quién hizo qué y cuándo. Se conserva indefinidamente." />
+      <PageHeader title="Auditoría" />
       <Group mb="md" gap="sm" wrap="wrap" align="flex-end">
         <Select aria-label="Persona" placeholder="Cualquier persona" clearable searchable w={{ base: "100%", sm: 220 }}
           data={users.map((u) => ({ value: u.id, label: u.name }))} value={f.actor_id ?? null}

@@ -35,7 +35,6 @@ export function UsersPage() {
     <>
       <PageHeader
         title="Usuarios"
-        description="Quién puede entrar a OpenDesk y con qué rol."
         action={
           <Button leftSection={<IconPlus size={16} />} onClick={() => setDrawer({ open: true, user: null })}>
             Agregar usuario

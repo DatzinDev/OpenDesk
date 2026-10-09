@@ -12,8 +12,8 @@
   flex-direction: column;
   justify-content: space-between;
   padding: 48px;
-  background: #0b1d3a;
-  color: #ffffff;
+  background: var(--opendesk-primary, #0b1d3a);
+  color: var(--opendesk-on-primary, #ffffff);
 }
 
 .pattern {

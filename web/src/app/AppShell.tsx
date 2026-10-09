@@ -5,7 +5,8 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useLogout, useMe } from "@/features/auth";
 import { NotificationBell, useLiveNotifications } from "@/features/notifications";
 import { ROLE_LABELS, type Role } from "@/features/users";
-import { DatzinSignature, Logo } from "@/shared/ui";
+import { OrganizationLogo, useBranding } from "@/features/settings";
+import { DatzinSignature } from "@/shared/ui";
 import classes from "./AppShell.module.css";
 
 type NavItem = { to: string; label: string; icon: Icon; roles?: Role[] };
@@ -23,26 +24,27 @@ const NAV: NavItem[] = [
 export function AppShell() {
   const { data: me } = useMe();
   const logout = useLogout();
+  const { data: branding } = useBranding();
   const [opened, { toggle, close }] = useDisclosure();
   useLiveNotifications();
   if (!me) return null;
 
   return (
-    <Shell navbar={{ width: 248, breakpoint: "sm", collapsed: { mobile: !opened } }} header={{ height: { base: 56, sm: 0 } }}>
+    <Shell navbar={{ width: 224, breakpoint: "sm", collapsed: { mobile: !opened } }} header={{ height: { base: branding?.logo_url ? 88 : 56, sm: 0 } }}>
       <Shell.Header hiddenFrom="sm" px="md" bg="navy.7" withBorder={false}>
         <Group h="100%" justify="space-between">
-          <Logo size={17} />
+          <OrganizationLogo size={17} />
           <Group gap="xs">
-            <NotificationBell />
-            <Burger opened={opened} onClick={toggle} color="white" size="sm" aria-label="Abrir menú" />
+            <NotificationBell color="var(--opendesk-on-primary)" />
+            <Burger opened={opened} onClick={toggle} color="var(--opendesk-on-primary)" size="sm" aria-label="Abrir menú" />
           </Group>
         </Group>
       </Shell.Header>
 
       <Shell.Navbar className={classes.navbar} p="md">
-        <Group justify="space-between" px={12} py={8} mb="lg" visibleFrom="sm">
-          <Logo size={20} />
-          <NotificationBell />
+        <Group justify="space-between" wrap="nowrap" align="flex-start" px={4} py={8} mb="lg" visibleFrom="sm">
+          <OrganizationLogo size={20} />
+          <NotificationBell color="var(--opendesk-on-primary)" />
         </Group>
 
         <Stack gap={4} style={{ flex: 1 }} component="nav" aria-label="Navegación principal">
@@ -62,13 +64,13 @@ export function AppShell() {
                 <Text size="sm" fw={500} truncate>
                   {me.name}
                 </Text>
-                <Text size="xs" c="rgba(255,255,255,0.6)">
+                <Text size="xs" c="var(--opendesk-on-primary)">
                   {ROLE_LABELS[me.role]}
                 </Text>
               </div>
             </Group>
             <Tooltip label="Cerrar sesión">
-              <ActionIcon variant="subtle" color="gray.3" onClick={() => logout.mutate()} aria-label="Cerrar sesión">
+              <ActionIcon variant="subtle" color="var(--opendesk-on-primary)" onClick={() => logout.mutate()} aria-label="Cerrar sesión">
                 <IconLogout size={18} />
               </ActionIcon>
             </Tooltip>
@@ -78,7 +80,7 @@ export function AppShell() {
       </Shell.Navbar>
 
       <Shell.Main className={classes.main}>
-        <div style={{ maxWidth: 1120, margin: "0 auto", padding: "32px clamp(16px, 4vw, 40px)" }}>
+        <div className={classes.workspace}>
           <Outlet />
         </div>
       </Shell.Main>

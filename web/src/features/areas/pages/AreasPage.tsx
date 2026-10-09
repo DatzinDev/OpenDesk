@@ -22,7 +22,6 @@ export function AreasPage() {
     <>
       <PageHeader
         title="Áreas"
-        description="Equipos de atención, quién pertenece a cada uno y a quién se escalan sus tickets."
         action={
           tab === "areas" && (
             <Button leftSection={<IconPlus size={16} />} onClick={() => setDrawer({ open: true, area: null })}>
