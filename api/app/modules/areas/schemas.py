@@ -1,4 +1,5 @@
 from datetime import date, time
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -26,9 +27,18 @@ class AreaIn(BaseModel):
 
 
 class AreaOut(AreaIn):
+    """Uso interno entre módulos (incluye el id entero)."""
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    uuid: UUID
+
+
+class AreaPublic(AreaIn):
+    """Respuesta del API: solo el identificador público."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID = Field(validation_alias="uuid")
 
 
 class HolidayIn(BaseModel):

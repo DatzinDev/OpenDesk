@@ -20,9 +20,10 @@ def env(db, monkeypatch):
     sop = areas.save_area(db, root.id, AreaIn(name="Soporte", levels=3))
     ven = areas.save_area(db, root.id, AreaIn(name="Ventas", levels=2))
     mk = lambda email, area, level=1: users.create_user(
-        db, root, UserCreate(email=email, name=email.split("@")[0], role="usuario", area_id=area.id, level=level))
+        db, root, UserCreate(email=email, name=email.split("@")[0], role="usuario", area_id=area.uuid, level=level))
     ana, beto, caro, dani = mk("ana@acme.com", sop), mk("beto@acme.com", sop, 2), mk("caro@acme.com", sop, 2), mk("dani@acme.com", ven)
-    new = lambda who=ana: t.create(db, root, TicketIn(title="Falla", description="No entra", area_id=who.area_id, assignee_id=who.id))
+    area_of = {sop.id: sop.uuid, ven.id: ven.uuid}
+    new = lambda who=ana: t.create(db, root, TicketIn(title="Falla", description="No entra", area_id=area_of[who.area_id], assignee_id=who.uuid))
     return root, ana, beto, caro, dani, ven, new
 
 
@@ -51,19 +52,19 @@ def test_escalate_picks_least_loaded_then_flags_manager(db, env):
     new(beto)  # beto ya tiene un ticket abierto
     tk = t.propose(db, ana, new().id, ProposalIn(kind="escalate", comment="Requiere nivel 2"))
     tk = t.accept(db, root, tk.id, tk.pending.id, DecisionIn())
-    assert tk.assignee_id == caro.id and tk.status == "asignado"
+    assert tk.assignee_id == caro.uuid and tk.status == "asignado"
     tk = t.propose(db, caro, tk.id, ProposalIn(kind="escalate", comment="Tampoco"))
     tk = t.accept(db, root, tk.id, tk.pending.id, DecisionIn())
-    assert tk.needs_manager and tk.assignee_id == caro.id  # nivel 3 vacío
+    assert tk.needs_manager and tk.assignee_id == caro.uuid  # nivel 3 vacío
 
 
 def test_reassign_to_other_area_needs_manager_choice(db, env):
     root, ana, _, _, dani, ven, new = env
-    tk = t.propose(db, ana, new().id, ProposalIn(kind="reassign", comment="Es de ventas", area_id=ven.id))
+    tk = t.propose(db, ana, new().id, ProposalIn(kind="reassign", comment="Es de ventas", area_id=ven.uuid))
     with pytest.raises(t.Conflict, match="persona"):
         t.accept(db, root, tk.id, tk.pending.id, DecisionIn())
-    tk = t.accept(db, root, tk.id, tk.pending.id, DecisionIn(user_id=dani.id))
-    assert tk.assignee_id == dani.id and tk.area_id == ven.id
+    tk = t.accept(db, root, tk.id, tk.pending.id, DecisionIn(user_id=dani.uuid))
+    assert tk.assignee_id == dani.uuid and tk.area_id == ven.uuid
 
 
 def test_reopen_restarts_sla_and_usuario_sees_only_own(db, env):

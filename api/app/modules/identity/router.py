@@ -61,6 +61,6 @@ def logout(request: Request, db: DB = Depends(get_db)):
     return resp
 
 
-@router.get("/me", response_model=users.UserOut)
-def me(user: users.UserOut = Depends(current_user)):
-    return user
+@router.get("/me", response_model=users.UserPublic)
+def me(user: users.UserOut = Depends(current_user), db: DB = Depends(get_db)):
+    return users.to_public(db, [user])[0]

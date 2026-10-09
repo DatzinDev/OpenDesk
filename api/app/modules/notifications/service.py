@@ -101,15 +101,18 @@ def on_ticket_changed(e: tickets.TicketChanged) -> None:
 
 def inbox(db: Session, user_id: int) -> Inbox:
     q = select(Notification).where(Notification.user_id == user_id)
-    items = db.scalars(q.order_by(Notification.created_at.desc(), Notification.id.desc()).limit(30))
+    items = list(db.scalars(q.order_by(Notification.created_at.desc(), Notification.id.desc()).limit(30)))
+    ticket_ids = tickets.public_ids(db, {n.ticket_id for n in items})
     unread = db.scalar(select(func.count()).select_from(Notification).where(
         Notification.user_id == user_id, Notification.read_at.is_(None)))
-    return Inbox(unread=unread, items=[NotificationOut.model_validate(n) for n in items])
+    return Inbox(unread=unread, items=[
+        NotificationOut(id=n.uuid, ticket_id=ticket_ids.get(n.ticket_id), title=n.title, body=n.body, read_at=n.read_at,
+                        created_at=n.created_at) for n in items])
 
 
-def mark_read(db: Session, user_id: int, ids: list[int] | None) -> None:
+def mark_read(db: Session, user_id: int, ids: list | None) -> None:
     q = update(Notification).where(Notification.user_id == user_id, Notification.read_at.is_(None))
-    db.execute((q.where(Notification.id.in_(ids)) if ids else q).values(read_at=now()))
+    db.execute((q.where(Notification.uuid.in_(ids)) if ids else q).values(read_at=now()))
     db.commit()
 
 

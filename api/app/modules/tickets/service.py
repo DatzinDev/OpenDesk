@@ -1,6 +1,7 @@
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
@@ -11,7 +12,7 @@ from app.modules import areas, users
 from app.modules.tickets import repository as repo
 from app.modules.tickets.events import TicketChanged
 from app.modules.tickets.models import Attachment, Event, Ticket, TrackingStatus
-from app.modules.tickets.schemas import (CloseIn, DecisionIn, EventOut, Person, ProposalIn, ReassignIn, ReopenIn,
+from app.modules.tickets.schemas import (AttachmentOut, CloseIn, DecisionIn, EventOut, Person, ProposalIn, ReassignIn, ReopenIn,
                                          SetStatusIn, StatusIn, StatusOut, TicketDetail, TicketIn, TicketOut)
 from app.shared import storage
 from app.shared.events import publish
@@ -52,12 +53,15 @@ def _require_staff(actor: users.UserOut) -> None:
         raise Forbidden
 
 
-def _visible(db: Session, actor: users.UserOut, ticket_id: int) -> Ticket:
+def _check_visible(actor: users.UserOut, t: Ticket | None) -> Ticket:
     """El Usuario solo ve los tickets que tiene asignados; Admin y Gestor ven todos."""
-    t = repo.get(db, ticket_id)
     if not t or (not _staff(actor) and t.assignee_id != actor.id):
         raise NotFound
     return t
+
+
+def _visible(db: Session, actor: users.UserOut, ticket_id: UUID) -> Ticket:
+    return _check_visible(actor, repo.by_uuid(db, Ticket, ticket_id))
 
 
 def _open(t: Ticket) -> None:
@@ -70,6 +74,15 @@ def _person(db: Session, user_id: int | None, area_id: int | None = None) -> use
     if not u or not u.is_active or u.role != "usuario" or (area_id and u.area_id != area_id):
         raise Conflict("Elige a una persona activa del área.")
     return u
+
+
+def _uid(db: Session, public_id: UUID | None) -> int | None:
+    return users.id_of(db, public_id)
+
+
+def _area(db: Session, public_id: UUID | None):
+    area_id = areas.id_of(db, public_id)
+    return areas.get(db, area_id) if area_id else None
 
 
 def _aware(dt: datetime) -> datetime:
@@ -163,75 +176,118 @@ def _done(db: Session, actor_id: int, t: Ticket, kind: str, data: dict | None = 
 
 
 # --- Lectura -------------------------------------------------------------------------------------
+# Hacia fuera solo salen UUID; los ids enteros se traducen aquí.
 
-def _out(t: Ticket, names: dict, pending=None, cls=TicketOut):
-    out = cls.model_validate(t)
-    out.folio, out.assignee_name = folio(t.id), names.get(t.assignee_id)
-    if pending:
-        out.pending = _event_out(pending, names, [])
-    return out
+USER_KEYS = ("from", "to", "user_id", "proposer_id")
+COPY = ("title", "description", "priority", "client_name", "client_email", "status", "outcome", "due_from", "due_at",
+        "committed", "needs_manager", "created_at", "closed_at")
 
 
-def _event_out(e: Event, names: dict, files) -> EventOut:
-    out = EventOut.model_validate(e)
-    out.actor_name, out.decided_by_name = names.get(e.actor_id), names.get(e.decided_by)
-    out.attachments = [f for f in files if f.event_id == e.id]
-    return out
+@dataclass
+class _Refs:
+    people: dict  # id → (uuid, nombre)
+    areas: dict  # id → uuid
+    statuses: dict  # id → uuid
+
+    def uid(self, user_id):
+        return self.people[user_id][0] if user_id in self.people else None
+
+    def name(self, user_id):
+        return self.people[user_id][1] if user_id in self.people else None
+
+
+def _refs(db: Session, tickets, events=()) -> _Refs:
+    ids = {t.assignee_id for t in tickets} | {t.created_by for t in tickets}
+    ids |= {e.actor_id for e in events} | {e.decided_by for e in events}
+    ids |= {e.data.get(k) for e in events for k in USER_KEYS}
+    return _Refs(users.public_refs(db, ids), areas.public_ids(db),
+                 repo.public_ids(db, TrackingStatus, {t.status_id for t in tickets}))
+
+
+def _event_out(e: Event, r: _Refs, files=()) -> EventOut:
+    data = {k: str(r.uid(v)) if k in USER_KEYS and v else str(r.areas.get(v)) if k == "area_id" and v else v
+            for k, v in e.data.items()}
+    return EventOut(
+        id=e.uuid, kind=e.kind, actor_id=r.uid(e.actor_id), actor_name=r.name(e.actor_id), comment=e.comment,
+        data=data, state=e.state, decided_by=r.uid(e.decided_by), decided_by_name=r.name(e.decided_by),
+        decision_comment=e.decision_comment, created_at=e.created_at,
+        attachments=[AttachmentOut(id=f.uuid, event_id=e.uuid, filename=f.filename, content_type=f.content_type,
+                                   size=f.size) for f in files if f.event_id == e.id],
+    )
+
+
+def _out(t: Ticket, r: _Refs, pending=None, cls=TicketOut, **extra):
+    return cls(
+        **{c: getattr(t, c) for c in COPY}, id=t.uuid, folio=folio(t.id), area_id=r.areas.get(t.area_id),
+        assignee_id=r.uid(t.assignee_id), assignee_name=r.name(t.assignee_id), created_by=r.uid(t.created_by),
+        status_id=r.statuses.get(t.status_id), pending=_event_out(pending, r) if pending else None, **extra,
+    )
 
 
 def _detail(db: Session, t: Ticket) -> TicketDetail:
     events = repo.events(db, t.id)
-    ids = {t.assignee_id} | {e.actor_id for e in events} | {e.decided_by for e in events}
-    ids |= {e.data.get(k) for e in events for k in ("from", "to", "user_id")}
-    names = users.names(db, ids)
+    r = _refs(db, [t], events)
     files = repo.attachments(db, t.id)
-    out = _out(t, names, next((e for e in events if e.state == "pending"), None), TicketDetail)
-    out.events = [_event_out(e, names, files) for e in events]
-    out.names = {str(k): v for k, v in names.items()}
-    return out
+    return _out(t, r, next((e for e in events if e.state == "pending"), None), TicketDetail,
+                events=[_event_out(e, r, files) for e in events],
+                names={str(u): n for u, n in r.people.values()})
 
 
-def list_for(db: Session, actor: users.UserOut, area_id=None, assignee_id=None, status=None, q=None) -> list[TicketOut]:
+def list_for(db: Session, actor: users.UserOut, area_id: UUID | None = None, assignee_id: UUID | None = None,
+             status=None, q=None) -> list[TicketOut]:
+    area, assignee = areas.id_of(db, area_id), users.id_of(db, assignee_id)
+    if (area_id and not area) or (assignee_id and not assignee):
+        return []
     if not _staff(actor):
-        assignee_id, area_id = actor.id, None
-    tickets = repo.list_(db, assignee_id=assignee_id, area_id=area_id, status=status, q=q)
-    names = users.names(db, {t.assignee_id for t in tickets})
+        assignee, area = actor.id, None
+    tickets = repo.list_(db, assignee_id=assignee, area_id=area, status=status, q=q)
     pending = repo.pending_by_ticket(db, [t.id for t in tickets if t.status == "pendiente"])
-    return [_out(t, names, pending.get(t.id)) for t in tickets]
+    r = _refs(db, tickets, pending.values())
+    return [_out(t, r, pending.get(t.id)) for t in tickets]
 
 
-def detail(db: Session, actor: users.UserOut, ticket_id: int) -> TicketDetail:
+def detail(db: Session, actor: users.UserOut, ticket_id: UUID) -> TicketDetail:
     return _detail(db, _visible(db, actor, ticket_id))
 
 
-def attachment(db: Session, actor: users.UserOut, attachment_id: int):
-    a = repo.get_attachment(db, attachment_id)
+def attachment(db: Session, actor: users.UserOut, attachment_id: UUID):
+    a = repo.by_uuid(db, Attachment, attachment_id)
     if not a:
         raise NotFound
-    _visible(db, actor, a.ticket_id)
+    _check_visible(actor, repo.get(db, a.ticket_id))
     return a
+
+
+def _people(found) -> list[Person]:
+    return [Person(id=u.uuid, name=u.name, level=u.level) for u in found]
 
 
 def peers(db: Session, actor: users.UserOut) -> list[Person]:
     """Compañeros del área del Usuario, para proponer una reasignación."""
     if not actor.area_id:
         return []
-    return [Person(id=u.id, name=u.name, level=u.level) for u in users.active_in_area(db, actor.area_id) if u.id != actor.id]
+    return _people(u for u in users.active_in_area(db, actor.area_id) if u.id != actor.id)
 
 
-def people(db: Session, actor: users.UserOut, area_id: int) -> list[Person]:
+def people(db: Session, actor: users.UserOut, area_id: UUID) -> list[Person]:
     _require_staff(actor)
-    return [Person(id=u.id, name=u.name, level=u.level) for u in users.active_in_area(db, area_id)]
+    area = areas.id_of(db, area_id)
+    return _people(users.active_in_area(db, area)) if area else []
+
+
+def public_ids(db: Session, ticket_ids) -> dict[int, UUID]:
+    """Mapa id interno → UUID público de los tickets indicados."""
+    return repo.public_ids(db, Ticket, ticket_ids)
 
 
 # --- Acciones ------------------------------------------------------------------------------------
 
 def create(db: Session, actor: users.UserOut, data: TicketIn, files: list[Upload] = ()) -> TicketDetail:
     _require_staff(actor)
-    area = areas.get(db, data.area_id)
+    area = _area(db, data.area_id)
     if not area or not area.is_active:
         raise Conflict("Selecciona un área activa.")
-    user = _person(db, data.assignee_id, area.id)
+    user = _person(db, _uid(db, data.assignee_id), area.id)
     _check_files(files)
     t = Ticket(title=data.title.strip(), description=data.description.strip(), priority=data.priority,
                client_name=(data.client_name or "").strip() or None,
@@ -243,7 +299,7 @@ def create(db: Session, actor: users.UserOut, data: TicketIn, files: list[Upload
     return _done(db, actor.id, t, "created")
 
 
-def propose(db: Session, actor: users.UserOut, ticket_id: int, data: ProposalIn, files: list[Upload] = ()) -> TicketDetail:
+def propose(db: Session, actor: users.UserOut, ticket_id: UUID, data: ProposalIn, files: list[Upload] = ()) -> TicketDetail:
     t = _visible(db, actor, ticket_id)
     if t.assignee_id != actor.id:
         raise Forbidden("Solo la persona asignada puede proponer acciones.")
@@ -258,11 +314,11 @@ def propose(db: Session, actor: users.UserOut, ticket_id: int, data: ProposalIn,
             raise Conflict("La fecha tentativa debe ser futura.")
         payload["due_at"] = due.isoformat()
     elif data.kind == "reassign" and data.user_id:
-        if data.user_id == actor.id:
+        if data.user_id == actor.uuid:
             raise Conflict("Elige a otro compañero.")
-        payload["user_id"] = _person(db, data.user_id, t.area_id).id
+        payload["user_id"] = _person(db, _uid(db, data.user_id), t.area_id).id
     elif data.kind == "reassign":
-        area = areas.get(db, data.area_id)
+        area = _area(db, data.area_id)
         if not area or not area.is_active or area.id == t.area_id:
             raise Conflict("Elige otra área activa.")
         payload["area_id"] = area.id
@@ -271,16 +327,16 @@ def propose(db: Session, actor: users.UserOut, ticket_id: int, data: ProposalIn,
     return _done(db, actor.id, t, "proposed", {"proposal": data.kind})
 
 
-def _proposal(db: Session, actor: users.UserOut, ticket_id: int, event_id: int) -> tuple[Ticket, Event]:
+def _proposal(db: Session, actor: users.UserOut, ticket_id: UUID, event_id: UUID) -> tuple[Ticket, Event]:
     _require_staff(actor)
     t = _visible(db, actor, ticket_id)
     p = repo.pending(db, t.id)
-    if not p or p.id != event_id:
+    if not p or p.uuid != event_id:
         raise Conflict("La propuesta ya fue decidida.")
     return t, p
 
 
-def accept(db: Session, actor: users.UserOut, ticket_id: int, event_id: int, data: DecisionIn) -> TicketDetail:
+def accept(db: Session, actor: users.UserOut, ticket_id: UUID, event_id: UUID, data: DecisionIn) -> TicketDetail:
     t, p = _proposal(db, actor, ticket_id, event_id)
     if p.kind == "close" and not data.outcome:
         raise Conflict("Indica si el ticket quedó resuelto o no resuelto.")
@@ -289,7 +345,7 @@ def accept(db: Session, actor: users.UserOut, ticket_id: int, event_id: int, dat
         if p.data.get("area_id"):
             if not data.user_id:
                 raise Conflict("Elige a la persona del área destino.")
-            target = _person(db, data.user_id, p.data["area_id"])
+            target = _person(db, _uid(db, data.user_id), p.data["area_id"])
         else:
             target = _person(db, p.data["user_id"], t.area_id)
     p.state, p.decided_by, p.decision_comment = "accepted", actor.id, data.comment.strip()
@@ -306,7 +362,7 @@ def accept(db: Session, actor: users.UserOut, ticket_id: int, event_id: int, dat
     return _done(db, actor.id, t, "accepted", {"proposal": p.kind, "proposer_id": p.actor_id, "outcome": data.outcome})
 
 
-def reject(db: Session, actor: users.UserOut, ticket_id: int, event_id: int, data: DecisionIn) -> TicketDetail:
+def reject(db: Session, actor: users.UserOut, ticket_id: UUID, event_id: UUID, data: DecisionIn) -> TicketDetail:
     t, p = _proposal(db, actor, ticket_id, event_id)
     if not data.comment.strip():
         raise Conflict("Escribe el motivo del rechazo.")
@@ -315,17 +371,17 @@ def reject(db: Session, actor: users.UserOut, ticket_id: int, event_id: int, dat
     return _done(db, actor.id, t, "rejected", {"proposal": p.kind, "proposer_id": p.actor_id, "comment": p.decision_comment})
 
 
-def reassign(db: Session, actor: users.UserOut, ticket_id: int, data: ReassignIn) -> TicketDetail:
+def reassign(db: Session, actor: users.UserOut, ticket_id: UUID, data: ReassignIn) -> TicketDetail:
     _require_staff(actor)
     t = _visible(db, actor, ticket_id)
     _open(t)
-    user = _person(db, data.user_id)
+    user = _person(db, _uid(db, data.user_id))
     _cancel_pending(db, t)
     _move(db, t, actor.id, user, "manual", data.comment)
     return _done(db, actor.id, t, "reassigned", {"to": user.id})
 
 
-def close(db: Session, actor: users.UserOut, ticket_id: int, data: CloseIn) -> TicketDetail:
+def close(db: Session, actor: users.UserOut, ticket_id: UUID, data: CloseIn) -> TicketDetail:
     _require_staff(actor)
     t = _visible(db, actor, ticket_id)
     _open(t)
@@ -335,16 +391,16 @@ def close(db: Session, actor: users.UserOut, ticket_id: int, data: CloseIn) -> T
     return _done(db, actor.id, t, "closed", {"outcome": data.outcome, "to": t.assignee_id})
 
 
-def set_status(db: Session, actor: users.UserOut, ticket_id: int, data: SetStatusIn) -> TicketDetail:
+def set_status(db: Session, actor: users.UserOut, ticket_id: UUID, data: SetStatusIn) -> TicketDetail:
     _require_staff(actor)
     t = _visible(db, actor, ticket_id)
     _open(t)
-    st = repo.get_status(db, data.status_id) if data.status_id else None
+    st = repo.by_uuid(db, TrackingStatus, data.status_id)
     if data.status_id and (not st or not st.is_active):
         raise Conflict("Elige un estatus activo del catálogo.")
-    if t.status_id == data.status_id:
+    if t.status_id == (st.id if st else None):
         return _detail(db, t)
-    t.status_id = data.status_id
+    t.status_id = st.id if st else None
     _event(db, t, "status", actor.id, data={"name": st.name if st else None})
     return _done(db, actor.id, t, "status", {"name": st.name if st else None})
 
@@ -355,13 +411,13 @@ def list_statuses(db: Session) -> list[StatusOut]:
     return [StatusOut.model_validate(x) for x in repo.statuses(db)]
 
 
-def save_status(db: Session, actor: users.UserOut, data: StatusIn, status_id: int | None = None) -> StatusOut:
+def save_status(db: Session, actor: users.UserOut, data: StatusIn, status_id: UUID | None = None) -> StatusOut:
     _require_staff(actor)
     name = data.name.strip()
     other = repo.status_by_name(db, name)
-    if other and other.id != status_id:
+    if other and other.uuid != status_id:
         raise Conflict("Ya existe un estatus con ese nombre.")
-    st = repo.get_status(db, status_id) if status_id else repo.add(db, TrackingStatus(name=name))
+    st = repo.by_uuid(db, TrackingStatus, status_id) if status_id else repo.add(db, TrackingStatus(name=name))
     if not st:
         raise NotFound
     st.name, st.is_active = name, data.is_active
@@ -369,12 +425,12 @@ def save_status(db: Session, actor: users.UserOut, data: StatusIn, status_id: in
     return StatusOut.model_validate(st)
 
 
-def reopen(db: Session, actor: users.UserOut, ticket_id: int, data: ReopenIn) -> TicketDetail:
+def reopen(db: Session, actor: users.UserOut, ticket_id: UUID, data: ReopenIn) -> TicketDetail:
     _require_staff(actor)
     t = _visible(db, actor, ticket_id)
     if t.status != "cerrado":
         raise Conflict("Solo se puede reabrir un ticket cerrado.")
-    user = _person(db, data.user_id or t.assignee_id)
+    user = _person(db, _uid(db, data.user_id) if data.user_id else t.assignee_id)
     t.outcome, t.closed_at = None, None
     _event(db, t, "reopened", actor.id, data.comment)
     _move(db, t, actor.id, user, "reopen")
@@ -412,6 +468,7 @@ def sweep(db: Session, at: datetime | None = None) -> None:
 @dataclass(frozen=True)
 class Summary:
     id: int
+    uuid: UUID
     folio: str
     title: str
     assignee_id: int
@@ -421,4 +478,4 @@ class Summary:
 
 def summary(db: Session, ticket_id: int) -> Summary | None:
     t = repo.get(db, ticket_id)
-    return Summary(t.id, folio(t.id), t.title, t.assignee_id, _utc(t.due_at), t.committed) if t else None
+    return Summary(t.id, t.uuid, folio(t.id), t.title, t.assignee_id, _utc(t.due_at), t.committed) if t else None

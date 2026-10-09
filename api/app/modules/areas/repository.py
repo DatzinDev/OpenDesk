@@ -8,6 +8,14 @@ def get(db: Session, area_id: int) -> Area | None:
     return db.get(Area, area_id)
 
 
+def id_of(db: Session, public_id) -> int | None:
+    return db.scalar(select(Area.id).where(Area.uuid == public_id))
+
+
+def public_ids(db: Session) -> dict[int, object]:
+    return dict(db.execute(select(Area.id, Area.uuid)).all())
+
+
 def get_by_name(db: Session, name: str) -> Area | None:
     return db.scalar(select(Area).where(Area.name.ilike(name)))
 

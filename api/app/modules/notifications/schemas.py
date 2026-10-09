@@ -1,13 +1,12 @@
 from datetime import datetime
+from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 
 class NotificationOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    ticket_id: int | None
+    id: UUID
+    ticket_id: UUID | None
     title: str
     body: str
     read_at: datetime | None
@@ -20,4 +19,4 @@ class Inbox(BaseModel):
 
 
 class ReadIn(BaseModel):
-    ids: list[int] | None = None  # sin ids: marcar todos
+    ids: list[UUID] | None = None  # sin ids: marcar todos

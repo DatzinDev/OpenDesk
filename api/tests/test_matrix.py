@@ -13,7 +13,7 @@ def env(db):
     a1 = areas.save_area(db, root.id, AreaIn(name="Soporte", levels=3))
     a2 = areas.save_area(db, root.id, AreaIn(name="Ventas", levels=2))
     mk = lambda email, area, level=None: service.create_user(
-        db, root, UserCreate(email=email, name=email[0], role="usuario", area_id=area.id, level=level))
+        db, root, UserCreate(email=email, name=email[0], role="usuario", area_id=area.uuid, level=level))
     return root, a1, a2, mk
 
 
@@ -28,13 +28,13 @@ def test_level_must_exist_in_area(db, env):
     root, a1, a2, mk = env
     u = mk("a@acme.com", a1, 3)
     with pytest.raises(service.Conflict, match="2 nivel"):
-        service.update_user(db, root, u.id, UserUpdate(area_id=a2.id, level=3))
+        service.update_user(db, root, u.id, UserUpdate(area_id=a2.uuid, level=3))
 
 
 def test_area_change_resets_level(db, env):
     root, a1, a2, mk = env
     u = mk("a@acme.com", a1, 3)
-    assert service.update_user(db, root, u.id, UserUpdate(area_id=a2.id)).level == 1
+    assert service.update_user(db, root, u.id, UserUpdate(area_id=a2.uuid)).level == 1
 
 
 def test_cannot_reduce_levels_below_occupied(db, env):

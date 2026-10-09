@@ -1,4 +1,5 @@
 from urllib.parse import quote
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
@@ -40,7 +41,7 @@ async def _uploads(files: list[UploadFile]) -> list[service.Upload]:
 
 
 @router.get("/tickets", response_model=list[TicketOut])
-def list_tickets(area_id: int | None = None, assignee_id: int | None = None, status: str | None = None,
+def list_tickets(area_id: UUID | None = None, assignee_id: UUID | None = None, status: str | None = None,
                  q: str | None = None, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
     return service.list_for(db, actor, area_id, assignee_id, status, q)
 
@@ -62,7 +63,7 @@ def create_status(data: StatusIn, actor: users.UserOut = Depends(me), db: Sessio
 
 
 @router.put("/ticket-statuses/{status_id}", response_model=StatusOut)
-def update_status(status_id: int, data: StatusIn, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
+def update_status(status_id: UUID, data: StatusIn, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
     return _call(service.save_status, db, actor, data, status_id)
 
 
@@ -72,55 +73,55 @@ def peers(actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
 
 
 @router.get("/tickets/people/{area_id}", response_model=list[Person])
-def people(area_id: int, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
+def people(area_id: UUID, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
     return _call(service.people, db, actor, area_id)
 
 
 @router.get("/tickets/{ticket_id}", response_model=TicketDetail)
-def get_ticket(ticket_id: int, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
+def get_ticket(ticket_id: UUID, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
     return _call(service.detail, db, actor, ticket_id)
 
 
 @router.post("/tickets/{ticket_id}/proposals", response_model=TicketDetail, status_code=201)
-async def propose(ticket_id: int, data: str = Form(...), files: list[UploadFile] = File(default=[]),
+async def propose(ticket_id: UUID, data: str = Form(...), files: list[UploadFile] = File(default=[]),
                   actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
     return _call(service.propose, db, actor, ticket_id, _form(ProposalIn, data), await _uploads(files))
 
 
 @router.post("/tickets/{ticket_id}/proposals/{event_id}/accept", response_model=TicketDetail)
-def accept(ticket_id: int, event_id: int, data: DecisionIn, actor: users.UserOut = Depends(me),
+def accept(ticket_id: UUID, event_id: UUID, data: DecisionIn, actor: users.UserOut = Depends(me),
            db: Session = Depends(get_db)):
     return _call(service.accept, db, actor, ticket_id, event_id, data)
 
 
 @router.post("/tickets/{ticket_id}/proposals/{event_id}/reject", response_model=TicketDetail)
-def reject(ticket_id: int, event_id: int, data: DecisionIn, actor: users.UserOut = Depends(me),
+def reject(ticket_id: UUID, event_id: UUID, data: DecisionIn, actor: users.UserOut = Depends(me),
            db: Session = Depends(get_db)):
     return _call(service.reject, db, actor, ticket_id, event_id, data)
 
 
 @router.post("/tickets/{ticket_id}/reassign", response_model=TicketDetail)
-def reassign(ticket_id: int, data: ReassignIn, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
+def reassign(ticket_id: UUID, data: ReassignIn, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
     return _call(service.reassign, db, actor, ticket_id, data)
 
 
 @router.post("/tickets/{ticket_id}/close", response_model=TicketDetail)
-def close(ticket_id: int, data: CloseIn, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
+def close(ticket_id: UUID, data: CloseIn, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
     return _call(service.close, db, actor, ticket_id, data)
 
 
 @router.put("/tickets/{ticket_id}/status", response_model=TicketDetail)
-def set_status(ticket_id: int, data: SetStatusIn, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
+def set_status(ticket_id: UUID, data: SetStatusIn, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
     return _call(service.set_status, db, actor, ticket_id, data)
 
 
 @router.post("/tickets/{ticket_id}/reopen", response_model=TicketDetail)
-def reopen(ticket_id: int, data: ReopenIn, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
+def reopen(ticket_id: UUID, data: ReopenIn, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
     return _call(service.reopen, db, actor, ticket_id, data)
 
 
 @router.get("/attachments/{attachment_id}")
-def download(attachment_id: int, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
+def download(attachment_id: UUID, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
     a = _call(service.attachment, db, actor, attachment_id)
     return StreamingResponse(storage.stream(a.key), media_type=a.content_type, headers={
         "Content-Disposition": f"inline; filename*=UTF-8''{quote(a.filename)}",

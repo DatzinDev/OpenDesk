@@ -22,9 +22,9 @@ def env(db, monkeypatch):
         db, root, UserCreate(email=email, name=email.split("@")[0], role=role, area_id=area, level=level))
     gestor = mk("gestor@acme.com", "gestor")
     area = areas.save_area(db, root.id, AreaIn(name="Soporte", levels=2, sla_hours=10))
-    ana, beto = mk("ana@acme.com", "usuario", area.id, 1), mk("beto@acme.com", "usuario", area.id, 2)
+    ana, beto = mk("ana@acme.com", "usuario", area.uuid, 1), mk("beto@acme.com", "usuario", area.uuid, 2)
     db.sent.clear()
-    tk = t.create(db, gestor, TicketIn(title="Falla", description="x", area_id=area.id, assignee_id=ana.id))
+    tk = t.create(db, gestor, TicketIn(title="Falla", description="x", area_id=area.uuid, assignee_id=ana.uuid))
     return gestor, ana, beto, tk
 
 
@@ -50,7 +50,7 @@ def test_sweep_warns_then_auto_escalates_once(db, env):
     t.sweep(db, tk.due_from + span * 0.85)
     assert titles(db, ana)[0].startswith("Se consumió el 80 %")
     t.sweep(db, tk.due_at + timedelta(minutes=1))
-    assert t.detail(db, gestor, tk.id).assignee_id == beto.id
+    assert t.detail(db, gestor, tk.id).assignee_id == beto.uuid
     assert "escalamiento automático" in titles(db, beto)[0]
     assert "venció el SLA" in titles(db, gestor)[0]
 

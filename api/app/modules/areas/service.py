@@ -1,4 +1,5 @@
 from datetime import date, datetime, time
+from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
@@ -34,6 +35,16 @@ def get(db: Session, area_id: int) -> AreaOut | None:
 
 def list_areas(db: Session) -> list[AreaOut]:
     return [AreaOut.model_validate(a) for a in repo.list_(db)]
+
+
+def id_of(db: Session, public_id: UUID | None) -> int | None:
+    """id interno a partir del UUID público (None si no existe)."""
+    return repo.id_of(db, public_id) if public_id else None
+
+
+def public_ids(db: Session) -> dict[int, UUID]:
+    """Mapa id interno → UUID público de todas las áreas."""
+    return repo.public_ids(db)
 
 
 def save_area(db: Session, actor_id: int, data: AreaIn, area_id: int | None = None) -> AreaOut:

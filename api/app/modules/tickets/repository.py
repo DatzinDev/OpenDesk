@@ -10,6 +10,15 @@ def get(db: Session, ticket_id: int) -> Ticket | None:
     return db.get(Ticket, ticket_id)
 
 
+def by_uuid(db: Session, model, public_id):
+    return db.scalar(select(model).where(model.uuid == public_id)) if public_id else None
+
+
+def public_ids(db: Session, model, ids) -> dict:
+    ids = set(ids) - {None}
+    return dict(db.execute(select(model.id, model.uuid).where(model.id.in_(ids))).all()) if ids else {}
+
+
 def add(db: Session, obj):
     db.add(obj)
     db.flush()
@@ -36,10 +45,6 @@ def list_(db: Session, *, assignee_id=None, area_id=None, status=None, q=None) -
 
 def statuses(db: Session) -> list[TrackingStatus]:
     return list(db.scalars(select(TrackingStatus).order_by(TrackingStatus.is_active.desc(), TrackingStatus.name)))
-
-
-def get_status(db: Session, status_id: int) -> TrackingStatus | None:
-    return db.get(TrackingStatus, status_id)
 
 
 def status_by_name(db: Session, name: str) -> TrackingStatus | None:

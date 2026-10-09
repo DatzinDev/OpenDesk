@@ -5,7 +5,7 @@ from app.modules import areas
 from app.modules.users import repository as repo
 from app.modules.users.events import UserCreated, UserUpdated
 from app.modules.users.models import User
-from app.modules.users.schemas import UserCreate, UserOut, UserUpdate
+from app.modules.users.schemas import UserCreate, UserOut, UserPublic, UserUpdate
 from app.shared.events import publish
 
 
@@ -25,6 +25,16 @@ def _can_manage(actor: UserOut, target_role: str) -> bool:
     if actor.role == "admin":
         return True
     return actor.role == "gestor" and target_role != "admin"
+
+
+def _area(db: Session, public_id) -> int | None:
+    """id interno del área a partir de su UUID público."""
+    if public_id is None:
+        return None
+    area_id = areas.id_of(db, public_id)
+    if area_id is None:
+        raise Conflict("Selecciona un área activa para esta persona.")
+    return area_id
 
 
 def _placement(db: Session, role: str, area_id: int | None, level: int | None) -> tuple[int | None, int | None]:
@@ -62,7 +72,7 @@ def create_user(db: Session, actor: UserOut, data: UserCreate) -> UserOut:
     email = data.email.lower()
     if repo.get_by_email(db, email):
         raise Conflict("Ya existe un usuario con ese correo.")
-    area_id, level = _placement(db, data.role, data.area_id, data.level)
+    area_id, level = _placement(db, data.role, _area(db, data.area_id), data.level)
     user = repo.add(db, User(email=email, name=data.name.strip(), role=data.role, area_id=area_id, level=level))
     db.commit()
     publish(UserCreated(actor_id=actor.id, user_id=user.id, email=email, name=user.name, role=user.role))
@@ -87,7 +97,7 @@ def update_user(db: Session, actor: UserOut, user_id: int, data: UserUpdate) -> 
             raise Conflict("Ya existe un usuario con ese correo.")
 
     new_role = data.role or user.role
-    new_area = data.area_id or user.area_id
+    new_area = _area(db, data.area_id) or user.area_id
     # Al cambiar de área, la persona entra al nivel 1 salvo que se indique otro.
     new_level = data.level or (user.level if new_area == user.area_id else None)
     data.area_id, data.level = _placement(db, new_role, new_area, new_level)
@@ -148,3 +158,18 @@ def managers(db: Session) -> list[UserOut]:
     """Gestores activos; si la organización aún no tiene, los Admins."""
     people = repo.active_by_role(db, "gestor") or repo.active_by_role(db, "admin")
     return [UserOut.model_validate(u) for u in people]
+
+
+def id_of(db: Session, public_id) -> int | None:
+    return repo.id_of(db, public_id) if public_id else None
+
+
+def public_refs(db: Session, ids) -> dict[int, tuple]:
+    """Mapa id interno → (UUID público, nombre) para las personas indicadas."""
+    return {u.id: (u.uuid, u.name) for u in repo.by_ids(db, set(ids) - {None})}
+
+
+def to_public(db: Session, people: list[UserOut]) -> list[UserPublic]:
+    area_ids = areas.public_ids(db)
+    return [UserPublic(**u.model_dump(exclude={"id", "uuid", "area_id"}), id=u.uuid, area_id=area_ids.get(u.area_id))
+            for u in people]

@@ -12,7 +12,7 @@ from app.modules.users.schemas import UserCreate, UserUpdate
 def make(db, actor, email, role):
     area_id = None
     if role == "usuario":
-        area_id = (areas.list_areas(db) or [areas.save_area(db, actor.id, AreaIn(name="General"))])[0].id
+        area_id = (areas.list_areas(db) or [areas.save_area(db, actor.id, AreaIn(name="General"))])[0].uuid
     return service.create_user(db, actor, UserCreate(email=email, name=email.split("@")[0], role=role, area_id=area_id))
 
 

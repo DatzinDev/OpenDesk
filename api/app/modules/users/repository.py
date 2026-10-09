@@ -33,6 +33,10 @@ def active_by_role(db: Session, role: str) -> list[User]:
     return list(db.scalars(select(User).where(User.role == role, User.is_active)))
 
 
+def id_of(db: Session, public_id) -> int | None:
+    return db.scalar(select(User.id).where(User.uuid == public_id))
+
+
 def by_ids(db: Session, ids) -> list[User]:
     return list(db.scalars(select(User).where(User.id.in_(ids))))
 
