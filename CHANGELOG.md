@@ -5,7 +5,7 @@ Todos los cambios relevantes de OpenDesk se documentan en este archivo. El forma
 [versionado semántico](https://semver.org/lang/es/). El detalle de cada entrega y sus decisiones está en la
 [bitácora](docs/bitacora.md).
 
-## [Sin publicar]
+## [0.1.1] — 2026-10-09
 
 ### Agregado
 - Pantalla de **Configuración**:
@@ -15,10 +15,8 @@ Todos los cambios relevantes de OpenDesk se documentan en este archivo. El forma
 - Pantalla de **Auditoría** para el Administrador, con filtros por persona, tipo de evento y fechas.
 - Avisos **instantáneos** en la campana; las listas de tickets en pantalla se actualizan solas.
 - Paginación de la Bandeja, de 50 en 50, con el total de tickets.
-
 - Respaldos automáticos diarios de la base de datos y los adjuntos (servicio `backup`), con 14 días de retención y guía de restauración.
 - Guía para pasar de la demostración a uso real.
-
 - Logotipo de OpenDesk en la aplicación, la encuesta, el favicon y el README.
 
 ### Cambiado
@@ -83,4 +81,5 @@ encuesta de satisfacción y analítica.
 - Identificadores públicos UUID; el id entero queda para uso interno.
 - Despliegue completo con Docker Compose (desarrollo y producción) y datos de prueba opcionales (`DEV_SEED`).
 
+[0.1.1]: https://github.com/DatzinDev/OpenDesk/releases/tag/v0.1.1
 [0.1.0]: https://github.com/DatzinDev/OpenDesk/releases/tag/v0.1.0
