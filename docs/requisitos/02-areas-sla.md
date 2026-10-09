@@ -40,7 +40,7 @@ Campos: nombre, descripción corta, SLA (horas), horario de atención, pausa en 
 - Área 24/7 con SLA 12 h → ticket asignado a las 09:00 vence a las 21:00.
 - Área L-V 09:00-18:00 con SLA 12 h → ticket asignado el viernes a las 15:00 vence el lunes a las 18:00.
 - Ticket asignado el sábado en área L-V → el reloj inicia el lunes a las 09:00.
+- Área L-V que pausa en festivos, lunes festivo → el ticket del viernes a las 15:00 (SLA 12 h) vence el martes a las 18:00.
 - Área L-V 09:00-18:00 y sábado 09:00-14:00 con SLA 12 h → ticket asignado el viernes a las 15:00 vence el lunes a las 13:00.
-- Área que pausa en festivos, lunes festivo → el ticket del viernes del ejemplo anterior vence el martes a las 18:00.
 - Editar el SLA del área a 48 h no cambia el vencimiento de ese ticket.
 - Propuesta rechazada a las 15:00 → el reloj sigue corriendo.
