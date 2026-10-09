@@ -130,7 +130,15 @@ def ensure_root(db: Session, email: str) -> None:
     db.commit()
 
 
-
 def highest_level_in_area(db: Session, area_id: int) -> int:
     """Nivel más alto ocupado por una persona activa del área (0 si no hay nadie)."""
     return repo.highest_level(db, area_id)
+
+
+def active_in_area(db: Session, area_id: int) -> list[UserOut]:
+    """Personas activas con rol Usuario del área, ordenadas por nivel."""
+    return [UserOut.model_validate(u) for u in repo.active_in_area(db, area_id)]
+
+
+def names(db: Session, ids) -> dict[int, str]:
+    return {u.id: u.name for u in repo.by_ids(db, set(ids) - {None})}

@@ -24,6 +24,15 @@ def highest_level(db: Session, area_id: int) -> int:
     return db.scalar(q) or 0
 
 
+def active_in_area(db: Session, area_id: int) -> list[User]:
+    q = select(User).where(User.area_id == area_id, User.role == "usuario", User.is_active).order_by(User.level, User.name)
+    return list(db.scalars(q))
+
+
+def by_ids(db: Session, ids) -> list[User]:
+    return list(db.scalars(select(User).where(User.id.in_(ids))))
+
+
 def add(db: Session, user: User) -> User:
     db.add(user)
     db.flush()
