@@ -17,6 +17,7 @@ class Ticket(PublicId, Base):
     priority: Mapped[str] = mapped_column(String(5), default="media")  # alta | media | baja
     client_name: Mapped[str | None] = mapped_column(String(120))
     client_email: Mapped[str | None] = mapped_column(String(254))
+    custom_values: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")
     status: Mapped[str] = mapped_column(String(12), default="asignado")  # asignado | pendiente | seguimiento | cerrado
     outcome: Mapped[str | None] = mapped_column(String(12))  # resuelto | no_resuelto
     # Plazo vigente: SLA de primera respuesta o, tras una actualización aceptada, la fecha compromiso.
@@ -58,6 +59,7 @@ class Event(PublicId, Base):
     comment: Mapped[str] = mapped_column(Text, default="")
     data: Mapped[dict] = mapped_column(JSON, default=dict)
     state: Mapped[str | None] = mapped_column(String(10))  # pending | accepted | rejected | cancelled
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     decided_by: Mapped[int | None] = mapped_column(ForeignKey("users_users.id"))
     decision_comment: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

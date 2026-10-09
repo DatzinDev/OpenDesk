@@ -7,10 +7,10 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.modules import identity, users
+from app.modules import identity, settings, users
 from app.modules.tickets import service
 from app.modules.tickets.schemas import (CloseIn, DecisionIn, Person, ProposalIn, ReassignIn, ReopenIn, SetStatusIn,
-                                         StatusIn, StatusOut, TicketDetail, TicketIn, TicketOut, TicketPage,
+                                         StatusIn, StatusOut, Priority, InboxOverview, TicketDetail, TicketIn, TicketOut, TicketPage,
                                          TicketUpdate)
 from app.shared import storage
 
@@ -27,6 +27,10 @@ def _call(fn, *args):
         raise HTTPException(409, str(e))
     except service.NotFound:
         raise HTTPException(404, "Ticket no encontrado.")
+    except settings.FormConflict as e:
+        raise HTTPException(409, str(e))
+    except ValueError as e:
+        raise HTTPException(422, str(e))
 
 
 def _form(model, data: str):
@@ -43,9 +47,14 @@ async def _uploads(files: list[UploadFile]) -> list[service.Upload]:
 
 @router.get("/tickets/page", response_model=TicketPage)
 def page_tickets(page: int = Query(1, ge=1), size: int = Query(50, ge=1, le=200), area_id: UUID | None = None,
-                 assignee_id: UUID | None = None, status: str | None = None, q: str | None = None,
+                 assignee_id: UUID | None = None, status: str | None = None, q: str | None = None, priority: Priority | None = None,
                  actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
-    return service.page_for(db, actor, page, size, area_id=area_id, assignee_id=assignee_id, status=status, q=q)
+    return service.page_for(db, actor, page, size, area_id=area_id, assignee_id=assignee_id, status=status, q=q, priority=priority)
+
+
+@router.get("/tickets/overview", response_model=InboxOverview)
+def inbox_overview(actor: users.UserOut = Depends(identity.require_roles("admin", "gestor")), db: Session = Depends(get_db)):
+    return service.overview(db, actor)
 
 
 @router.get("/tickets", response_model=list[TicketOut])

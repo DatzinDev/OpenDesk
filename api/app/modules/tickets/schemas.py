@@ -12,21 +12,25 @@ ProposalKind = Literal["update", "escalate", "close", "reassign"]
 
 class TicketIn(BaseModel):
     title: str = Field(min_length=1, max_length=160)
-    description: str = Field(min_length=1, max_length=10000)
+    description: str = Field(default="", min_length=0, max_length=10000)
     area_id: UUID
     assignee_id: UUID
     priority: Priority = "media"
     client_name: str | None = Field(default=None, max_length=120)
     client_email: EmailStr | None = None
+    custom_values: dict[str, object] = Field(default_factory=dict, max_length=200)
+    form_revision: int | None = Field(default=None, ge=0)
 
 
 class TicketUpdate(BaseModel):
     """Datos descriptivos editables; área y asignado cambian solo con reasignación."""
     title: str | None = Field(default=None, min_length=1, max_length=160)
-    description: str | None = Field(default=None, min_length=1, max_length=10000)
+    description: str | None = Field(default=None, min_length=0, max_length=10000)
     priority: Priority | None = None
     client_name: str | None = Field(default=None, max_length=120)
     client_email: EmailStr | Literal[""] | None = None  # "" borra el correo
+    custom_values: dict[str, object] | None = Field(default=None, max_length=200)
+    form_revision: int | None = Field(default=None, ge=0)
 
 
 class ProposalIn(BaseModel):
@@ -95,8 +99,29 @@ class EventOut(BaseModel):
     decided_by: UUID | None
     decided_by_name: str | None = None
     decision_comment: str
+    decided_at: datetime | None = None
     created_at: datetime
     attachments: list[AttachmentOut] = []
+
+
+class DeadlineOut(BaseModel):
+    kind: Literal["sla", "commitment"]
+    elapsed_hours: float
+    total_hours: float
+    percent: float
+    warning_percent: float
+    overdue: bool
+    as_of: datetime
+
+
+class InboxOverview(BaseModel):
+    open: int
+    pending: int
+    tracking: int
+    risk: int
+    overdue: int
+    intervention: int
+    as_of: datetime
 
 
 class TicketOut(BaseModel):
@@ -110,6 +135,7 @@ class TicketOut(BaseModel):
     priority: Priority
     client_name: str | None
     client_email: str | None
+    custom_values: dict[str, object] = Field(default_factory=dict)
     status: Status
     outcome: Outcome | None
     due_from: datetime
@@ -120,6 +146,7 @@ class TicketOut(BaseModel):
     created_by: UUID
     created_at: datetime
     closed_at: datetime | None
+    last_activity_at: datetime | None = None
     pending: EventOut | None = None
 
 
@@ -129,6 +156,7 @@ class TicketPage(BaseModel):
 
 
 class TicketDetail(TicketOut):
+    deadline: DeadlineOut
     events: list[EventOut] = []
     names: dict[str, str] = {}  # UUID → nombre de las personas mencionadas en la línea de tiempo
 

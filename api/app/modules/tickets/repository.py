@@ -1,4 +1,4 @@
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, union_all
 from sqlalchemy.orm import Session
 
 from app.modules.tickets.models import Attachment, Event, Ticket, TrackingStatus
@@ -25,7 +25,7 @@ def add(db: Session, obj):
     return obj
 
 
-def _filtered(*, assignee_id=None, area_id=None, status=None, q=None):
+def _filtered(*, assignee_id=None, area_id=None, status=None, q=None, priority=None):
     query = select(Ticket)
     if assignee_id:
         query = query.where(Ticket.assignee_id == assignee_id)
@@ -35,9 +35,11 @@ def _filtered(*, assignee_id=None, area_id=None, status=None, q=None):
         query = query.where(Ticket.status.in_(OPEN))
     elif status:
         query = query.where(Ticket.status == status)
+    if priority:
+        query = query.where(Ticket.priority == priority)
     if q:
         digits = "".join(c for c in q if c.isdigit())
-        cond = Ticket.title.ilike(f"%{q}%")
+        cond = or_(Ticket.title.ilike(f"%{q}%"), Ticket.client_name.ilike(f"%{q}%"), Ticket.client_email.ilike(f"%{q}%"))
         query = query.where(or_(cond, Ticket.id == int(digits)) if digits else cond)
     return query
 
@@ -90,3 +92,17 @@ def open_counts(db: Session, user_ids) -> dict[int, int]:
     q = (select(Ticket.assignee_id, func.count()).where(Ticket.assignee_id.in_(user_ids), Ticket.status.in_(OPEN))
          .group_by(Ticket.assignee_id))
     return dict(db.execute(q).all())
+
+
+def latest_activity(db: Session, ticket_ids) -> dict:
+    if not ticket_ids:
+        return {}
+    events = union_all(select(Event.ticket_id, Event.created_at.label("at")).where(Event.ticket_id.in_(ticket_ids)),
+                       select(Event.ticket_id, Event.decided_at.label("at")).where(Event.ticket_id.in_(ticket_ids), Event.decided_at.is_not(None))).subquery()
+    result = dict(db.execute(select(events.c.ticket_id, func.max(events.c.at)).group_by(events.c.ticket_id)).all())
+    # Las decisiones anteriores no tenían fecha en el evento; su auditoría sí la conserva.
+    from app.modules import audit
+    for id, at in audit.ticket_activity(db, ticket_ids).items():
+        if id not in result or (at.replace(tzinfo=None) > result[id].replace(tzinfo=None)):
+            result[id] = at
+    return result

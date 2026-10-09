@@ -194,7 +194,7 @@ def _done(db: Session, actor_id: int, t: Ticket, kind: str, data: dict | None = 
 # Hacia fuera solo salen UUID; los ids enteros se traducen aquí.
 
 USER_KEYS = ("from", "to", "user_id", "proposer_id")
-COPY = ("title", "description", "priority", "client_name", "client_email", "status", "outcome", "due_from", "due_at",
+COPY = ("title", "description", "priority", "client_name", "client_email", "custom_values", "status", "outcome", "due_from", "due_at",
         "committed", "needs_manager", "created_at", "closed_at")
 
 
@@ -203,6 +203,7 @@ class _Refs:
     people: dict  # id → (uuid, nombre)
     areas: dict  # id → uuid
     statuses: dict  # id → uuid
+    activity: dict
 
     def uid(self, user_id):
         return self.people[user_id][0] if user_id in self.people else None
@@ -216,7 +217,7 @@ def _refs(db: Session, tickets, events=()) -> _Refs:
     ids |= {e.actor_id for e in events} | {e.decided_by for e in events}
     ids |= {e.data.get(k) for e in events for k in USER_KEYS}
     return _Refs(users.public_refs(db, ids), areas.public_ids(db),
-                 repo.public_ids(db, TrackingStatus, {t.status_id for t in tickets}))
+                 repo.public_ids(db, TrackingStatus, {t.status_id for t in tickets}), repo.latest_activity(db, [t.id for t in tickets]))
 
 
 def _event_out(e: Event, r: _Refs, files=()) -> EventOut:
@@ -225,7 +226,7 @@ def _event_out(e: Event, r: _Refs, files=()) -> EventOut:
     return EventOut(
         id=e.uuid, kind=e.kind, actor_id=r.uid(e.actor_id), actor_name=r.name(e.actor_id), comment=e.comment,
         data=data, state=e.state, decided_by=r.uid(e.decided_by), decided_by_name=r.name(e.decided_by),
-        decision_comment=e.decision_comment, created_at=e.created_at,
+        decision_comment=e.decision_comment, created_at=e.created_at, decided_at=e.decided_at,
         attachments=[AttachmentOut(id=f.uuid, event_id=e.uuid, filename=f.filename, content_type=f.content_type,
                                    size=f.size) for f in files if f.event_id == e.id],
     )
@@ -235,7 +236,7 @@ def _out(t: Ticket, r: _Refs, pending=None, cls=TicketOut, **extra):
     return cls(
         **{c: getattr(t, c) for c in COPY}, id=t.uuid, folio=folio(t.id), area_id=r.areas.get(t.area_id),
         assignee_id=r.uid(t.assignee_id), assignee_name=r.name(t.assignee_id), created_by=r.uid(t.created_by),
-        status_id=r.statuses.get(t.status_id), pending=_event_out(pending, r) if pending else None, **extra,
+        status_id=r.statuses.get(t.status_id), last_activity_at=max(_utc(t.created_at), _utc(r.activity.get(t.id, t.created_at)), *([_utc(t.closed_at)] if t.closed_at else [])), pending=_event_out(pending, r) if pending else None, **extra,
     )
 
 
@@ -245,22 +246,22 @@ def _detail(db: Session, t: Ticket) -> TicketDetail:
     files = repo.attachments(db, t.id)
     return _out(t, r, next((e for e in events if e.state == "pending"), None), TicketDetail,
                 events=[_event_out(e, r, files) for e in events],
-                names={str(u): n for u, n in r.people.values()})
+                names={str(u): n for u, n in r.people.values()}, deadline=deadline_info(db, t))
 
 
-def _filters(db: Session, actor: users.UserOut, area_id, assignee_id, status, q) -> dict | None:
+def _filters(db: Session, actor: users.UserOut, area_id, assignee_id, status, q, priority=None) -> dict | None:
     """Filtros internos de la lista; None si un filtro apunta a algo que no existe."""
     area, assignee = areas.id_of(db, area_id), users.id_of(db, assignee_id)
     if (area_id and not area) or (assignee_id and not assignee):
         return None
     if not _staff(actor):
         assignee, area = actor.id, None
-    return {"assignee_id": assignee, "area_id": area, "status": status, "q": q}
+    return {"assignee_id": assignee, "area_id": area, "status": status, "q": q, "priority": priority}
 
 
 def list_for(db: Session, actor: users.UserOut, area_id: UUID | None = None, assignee_id: UUID | None = None,
-             status=None, q=None, limit: int | None = None, offset: int = 0) -> list[TicketOut]:
-    filters = _filters(db, actor, area_id, assignee_id, status, q)
+             status=None, q=None, limit: int | None = None, offset: int = 0, priority=None) -> list[TicketOut]:
+    filters = _filters(db, actor, area_id, assignee_id, status, q, priority)
     if filters is None:
         return []
     tickets = repo.list_(db, limit, offset, **filters)
@@ -271,7 +272,7 @@ def list_for(db: Session, actor: users.UserOut, area_id: UUID | None = None, ass
 
 def page_for(db: Session, actor: users.UserOut, page: int, size: int, **kw) -> TicketPage:
     """Página de la bandeja con el total, para paginar en la interfaz."""
-    filters = _filters(db, actor, kw.get("area_id"), kw.get("assignee_id"), kw.get("status"), kw.get("q"))
+    filters = _filters(db, actor, kw.get("area_id"), kw.get("assignee_id"), kw.get("status"), kw.get("q"), kw.get("priority"))
     total = repo.count(db, **filters) if filters is not None else 0
     return TicketPage(items=list_for(db, actor, limit=size, offset=(page - 1) * size, **kw), total=total)
 
@@ -319,9 +320,12 @@ def create(db: Session, actor: users.UserOut, data: TicketIn, files: list[Upload
         raise Conflict("Selecciona un área activa.")
     user = _person(db, _uid(db, data.assignee_id), area.id)
     _check_files(files)
+    custom_values = settings.validate_values(db, data.custom_values, data.form_revision)
+    settings.validate_system(settings.ticket_form(db), data.model_dump(), files=files)
     t = Ticket(title=data.title.strip(), description=data.description.strip(), priority=data.priority,
                client_name=(data.client_name or "").strip() or None,
-               client_email=data.client_email.lower() if data.client_email else None, created_by=actor.id)
+               client_email=data.client_email.lower() if data.client_email else None, created_by=actor.id,
+               custom_values=custom_values)
     _assign(db, t, user)
     repo.add(db, t)
     _event(db, t, "created", actor.id, data={"to": user.id}, files=files)
@@ -338,7 +342,23 @@ def update(db: Session, actor: users.UserOut, ticket_id: UUID, data: TicketUpdat
     if not _staff(actor) and t.assignee_id != actor.id:
         raise Forbidden
     _open(t)
+    definition = settings.ticket_form(db, lock=True)
+    if data.form_revision is not None and data.form_revision != definition.revision:
+        raise settings.FormConflict("El formulario cambió. Actualiza el formulario antes de guardar.")
+    existing = {key: getattr(t, key) for key in EDITABLE}
+    values = {**existing, **data.model_dump(exclude_unset=True)}
+    settings.validate_system(definition, values, existing=existing)
     changes = {}
+    custom_changes = []
+    if data.custom_values is not None:
+        merged = settings.validate_values(db, data.custom_values, data.form_revision, t.custom_values)
+        for f in settings.ticket_form(db).fields:
+            key = str(f.id)
+            if merged.get(key) != t.custom_values.get(key):
+                custom_changes.append({"id": key, "label": f.label,
+                                       "before": settings.display_value(f, t.custom_values.get(key)),
+                                       "after": settings.display_value(f, merged.get(key))})
+        t.custom_values = merged
     for field in EDITABLE:
         if field not in data.model_fields_set:
             continue
@@ -346,16 +366,19 @@ def update(db: Session, actor: users.UserOut, ticket_id: UUID, data: TicketUpdat
         value = value.strip() or None if isinstance(value, str) else value
         if field == "client_email" and value:
             value = value.lower()
-        if field in ("title", "description", "priority") and not value:
-            raise Conflict("El título, la descripción y la prioridad son obligatorios.")
+        if field in ("title", "priority") and not value:
+            raise Conflict("El título y la prioridad son obligatorios.")
+        if field == "description" and not value:
+            value = ""
         if getattr(t, field) != value:
             # La descripción puede ser larga: el historial registra que cambió, sin copiar el texto.
             changes[field] = None if field == "description" else [getattr(t, field), value]
             setattr(t, field, value)
-    if not changes:
+    if not changes and not custom_changes:
         return _detail(db, t)
-    _event(db, t, "edited", actor.id, data={"changes": changes})
-    return _done(db, actor.id, t, "edited", {"changes": changes})
+    details = {"changes": changes, **({"custom_changes": custom_changes} if custom_changes else {})}
+    _event(db, t, "edited", actor.id, data=details)
+    return _done(db, actor.id, t, "edited", details)
 
 
 def propose(db: Session, actor: users.UserOut, ticket_id: UUID, data: ProposalIn, files: list[Upload] = ()) -> TicketDetail:
@@ -407,6 +430,7 @@ def accept(db: Session, actor: users.UserOut, ticket_id: UUID, event_id: UUID, d
             target = _person(db, _uid(db, data.user_id), p.data["area_id"])
         else:
             target = _person(db, p.data["user_id"], t.area_id)
+    p.decided_at = now()
     p.state, p.decided_by, p.decision_comment = "accepted", actor.id, data.comment.strip()
     p.data = {**p.data, **_first_response(db, t)}
     if p.kind == "update":
@@ -425,6 +449,7 @@ def reject(db: Session, actor: users.UserOut, ticket_id: UUID, event_id: UUID, d
     t, p = _proposal(db, actor, ticket_id, event_id)
     if not data.comment.strip():
         raise Conflict("Escribe el motivo del rechazo.")
+    p.decided_at = now()
     p.state, p.decided_by, p.decision_comment = "rejected", actor.id, data.comment.strip()
     _settle(t)
     return _done(db, actor.id, t, "rejected", {"proposal": p.kind, "proposer_id": p.actor_id, "comment": p.decision_comment})
@@ -546,3 +571,28 @@ def summary(db: Session, ticket_id: int) -> Summary | None:
 def visible_id(db: Session, actor: users.UserOut, ticket_id: UUID) -> int:
     """id interno de un ticket que la persona puede ver; NotFound si no existe o no le corresponde."""
     return _visible(db, actor, ticket_id).id
+
+
+def deadline_info(db: Session, t: Ticket, at=None, clock=None, warning=None):
+    from app.modules.tickets.schemas import DeadlineOut
+    at = _utc(t.closed_at) if t.status == "cerrado" and t.closed_at else at or now()
+    start, due = _utc(t.due_from), _utc(t.due_at)
+    clock = clock or areas.business_clock(db)
+    hours = (lambda a, b: max(0, (b - a).total_seconds() / 3600)) if t.committed else (lambda a, b: clock(t.area_id, a, b))
+    total, elapsed = hours(start, due), hours(start, at)
+    return DeadlineOut(kind="commitment" if t.committed else "sla", elapsed_hours=elapsed, total_hours=total,
+                       percent=max(0, elapsed / total * 100) if total > 0 else (100 if at >= due else 0),
+                       warning_percent=settings.get(db, "sla_warning_pct") if warning is None else warning, overdue=t.status != "cerrado" and at > due, as_of=at)
+
+
+def overview(db: Session, actor: users.UserOut):
+    from app.modules.tickets.schemas import InboxOverview
+    _require_staff(actor)
+    tickets = repo.open_tickets(db)
+    at, clock = now(), areas.business_clock(db)
+    warning = settings.get(db, "sla_warning_pct")
+    deadlines = [deadline_info(db, t, at, clock, warning) for t in tickets]
+    return InboxOverview(open=len(tickets), pending=sum(t.status == "pendiente" for t in tickets),
+                         tracking=sum(t.status == "seguimiento" for t in tickets),
+                         risk=sum(d.overdue or d.percent >= warning for d in deadlines),
+                         overdue=sum(d.overdue for d in deadlines), intervention=sum(t.needs_manager for t in tickets), as_of=at)

@@ -30,5 +30,8 @@ def db(monkeypatch):
     sent = []
     monkeypatch.setattr(mailer, "send", lambda to, subject, html: sent.append((to, subject)))
     with SessionLocal() as s:
+        s.add(_p.Param(key="ticket_form", value={"revision": 0, "fields": []}))
+        s.add(_p.Param(key="survey_form", value={"revision": 0, "questions": []}))
+        s.commit()
         s.sent = sent
         yield s

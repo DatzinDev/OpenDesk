@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.db import SessionLocal
@@ -88,3 +88,9 @@ def entries(db: Session, actor_uuid=None, action: str | None = None, start=None,
             "data": _readable(r.data, people, area_names),
         })
     return {"items": items, "more": more}
+
+
+def ticket_activity(db: Session, ticket_ids) -> dict:
+    query = select(AuditEntry.entity_id, func.max(AuditEntry.at)).where(AuditEntry.entity == "ticket", AuditEntry.action.startswith("ticket."),
+        AuditEntry.entity_id.in_([str(id) for id in ticket_ids])).group_by(AuditEntry.entity_id)
+    return {int(id): at for id, at in db.execute(query)}
