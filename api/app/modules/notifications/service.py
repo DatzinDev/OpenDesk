@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.orm import Session
 
 from app.core import config
@@ -97,7 +97,18 @@ def on_ticket_changed(e: tickets.TicketChanged) -> None:
                 if by_mail:
                     _mail(user.email, title, "ticket.html", name=user.name.split(" ")[0], title=title, body=body,
                           ticket_id=s.id)
+        _ping(db, sent)
         db.commit()
+
+
+CHANNEL = "opendesk_notify"
+
+
+def _ping(db: Session, user_ids) -> None:
+    """Avisa por PostgreSQL (LISTEN/NOTIFY) a las sesiones abiertas; llega aunque el aviso lo cree el worker."""
+    if db.bind.dialect.name == "postgresql":
+        for uid in user_ids:
+            db.execute(text("SELECT pg_notify(:c, :p)"), {"c": CHANNEL, "p": str(uid)})
 
 
 def inbox(db: Session, user_id: int) -> Inbox:
