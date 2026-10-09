@@ -2,6 +2,15 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-08 — Corrección de correo de usuarios
+
+**Cambios**
+- El correo de un usuario ahora se puede editar (excepto el del Admin principal). Al cambiarlo, se cierran sus sesiones abiertas y se envía el aviso de acceso al nuevo correo.
+- La desactivación de una cuenta también cierra sus sesiones abiertas.
+
+**Decisiones**
+- El correo es la llave de acceso con Google: corregirlo traslada el acceso a la nueva cuenta sin perder el historial del usuario.
+
 ## 2026-10-08 — Despliegue de pruebas y licencia
 
 **Cambios**
