@@ -52,10 +52,10 @@ flowchart LR
 | Módulo | Descripción | Estado |
 |---|---|:-:|
 | Acceso y usuarios | Inicio de sesión con Google, roles Admin / Gestor / Usuario, auditoría y correos de cuenta | ✅ |
-| Áreas y SLA | Tiempo de primera respuesta y horario de atención por área | 🚧 |
-| Matriz de escalamiento | Niveles por área; el ticket sube al siguiente nivel con menor carga | 🚧 |
-| Tickets | Formulario breve, propuestas del usuario (actualizar, escalar, reasignar, cerrar), aprobación del gestor y adjuntos | 🚧 |
-| Notificaciones | Campana de avisos y correo, auto-escalamiento por SLA vencido, recordatorios y cronómetro de plazos | 🚧 |
+| Áreas y SLA | Tiempo de primera respuesta y horario de atención por área | ✅ |
+| Matriz de escalamiento | Niveles por área; el ticket sube al siguiente nivel con menor carga | ✅ |
+| Tickets | Formulario breve, propuestas del usuario (actualizar, escalar, reasignar, cerrar), aprobación del gestor y adjuntos | ✅ |
+| Notificaciones | Campana de avisos y correo, auto-escalamiento por SLA vencido, recordatorios y cronómetro de plazos | ✅ |
 | Encuesta | Calificación del cliente con un solo clic desde el correo | 🔜 |
 | Analítica | KPIs, tendencias y cumplimiento de SLA en tiempo real | 🔜 |
 

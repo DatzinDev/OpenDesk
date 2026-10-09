@@ -11,10 +11,10 @@ Documentos relacionados: [Stack y arquitectura](../arquitectura.md) · [Diseño]
 | # | Módulo | Archivo | Estado |
 |---|--------|---------|--------|
 | 01 | Acceso, usuarios y roles | [01-acceso-usuarios-roles.md](01-acceso-usuarios-roles.md) | Validado |
-| 02 | Áreas y SLA | [02-areas-sla.md](02-areas-sla.md) | En desarrollo |
-| 03 | Matriz de escalamiento | [03-matriz-responsables.md](03-matriz-responsables.md) | En desarrollo |
-| 04 | Tickets y flujo | [04-tickets.md](04-tickets.md) | En desarrollo |
-| 05 | Notificaciones | [05-notificaciones.md](05-notificaciones.md) | En desarrollo |
+| 02 | Áreas y SLA | [02-areas-sla.md](02-areas-sla.md) | Validado |
+| 03 | Matriz de escalamiento | [03-matriz-responsables.md](03-matriz-responsables.md) | Validado |
+| 04 | Tickets y flujo | [04-tickets.md](04-tickets.md) | Validado |
+| 05 | Notificaciones | [05-notificaciones.md](05-notificaciones.md) | Validado |
 | 06 | Encuesta de satisfacción | [06-encuesta.md](06-encuesta.md) | Pendiente |
 | 07 | Analítica | [07-analitica.md](07-analitica.md) | Pendiente |
 | 08 | Auditoría y parámetros | [08-auditoria-parametros.md](08-auditoria-parametros.md) | Pendiente |
