@@ -3,6 +3,7 @@ export type Area = {
   name: string;
   description: string;
   sla_hours: number;
+  levels: number; // niveles de escalamiento
   always_open: boolean;
   week: DayHours[]; // 7 entradas, 0 = lunes
   pause_on_holidays: boolean;

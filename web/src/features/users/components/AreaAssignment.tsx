@@ -30,7 +30,7 @@ export function AreaAssignment() {
         onSuccess: () =>
           notifications.show({
             message: u.area_id
-              ? `${u.name} ahora pertenece a ${area}. Revisa su responsable en la matriz de escalamiento.`
+              ? `${u.name} ahora pertenece a ${area}. Entra al nivel 1; ajústalo en la matriz de escalamiento.`
               : `${u.name} ahora pertenece a ${area}.`,
           }),
         onError: (e) => notifications.show({ color: "pink", message: e.message }),

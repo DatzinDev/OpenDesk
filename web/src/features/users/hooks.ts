@@ -22,10 +22,3 @@ export function useUpdateUser() {
   });
 }
 
-export function useSetManager() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, managerId }: { id: number; managerId: number | null }) => usersApi.setManager(id, managerId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
-  });
-}

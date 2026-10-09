@@ -108,7 +108,7 @@ export function UserDrawer({ opened, onClose, user, actor }: Props) {
           {role === "usuario" && (
             <Select
               label="Área"
-              description={user?.area_id && areaId !== String(user.area_id) ? "Al cambiar de área se quita su responsable directo y el de quienes dependían de esta persona." : undefined}
+              description={user?.area_id && areaId !== String(user.area_id) ? "Al cambiar de área, la persona entra al nivel 1 de la nueva área." : undefined}
               placeholder="Selecciona un área"
               required
               searchable

@@ -11,6 +11,7 @@ const EMPTY: AreaInput = {
   name: "",
   description: "",
   sla_hours: 24,
+  levels: 3,
   always_open: true,
   week: [NINE_SIX, NINE_SIX, NINE_SIX, NINE_SIX, NINE_SIX, null, null],
   pause_on_holidays: false,
@@ -69,6 +70,15 @@ export function AreaDrawer({ opened, onClose, area }: Props) {
             onChange={(v) => set("sla_hours", Number(v) || 1)}
           />
 
+          <NumberInput
+            label="Niveles de escalamiento"
+            description="El nivel 1 es el primer contacto; los tickets escalan del nivel más bajo al más alto."
+            min={1}
+            max={10}
+            required
+            value={form.levels}
+            onChange={(v) => set("levels", Number(v) || 1)}
+          />
           <Stack gap={8}>
             <Text size="sm" fw={500}>
               Horario de atención

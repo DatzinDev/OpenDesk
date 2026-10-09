@@ -7,7 +7,7 @@ export type User = {
   picture: string | null;
   role: Role;
   area_id: number | null;
-  manager_id: number | null;
+  level: number | null; // nivel de escalamiento; 1 = primer contacto
   is_active: boolean;
   is_root: boolean;
   created_at: string;
@@ -15,7 +15,7 @@ export type User = {
 };
 
 export type UserCreate = { email: string; name: string; role: Role; area_id: number | null };
-export type UserUpdate = Partial<Pick<User, "email" | "name" | "role" | "area_id" | "is_active">>;
+export type UserUpdate = Partial<Pick<User, "email" | "name" | "role" | "area_id" | "level" | "is_active">>;
 
 export const ROLE_LABELS: Record<Role, string> = {
   admin: "Administrador",
