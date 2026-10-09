@@ -44,7 +44,7 @@ flowchart LR
     P -->|acepta| S[Seguimiento / escalado / cerrado]
     P -->|rechaza con comentario| U
     S -->|cierre exitoso| E[Encuesta de satisfacción al cliente]
-    U -.->|SLA vencido| R[Auto-escalamiento al responsable directo]
+    U -.->|SLA vencido| R[Auto-escalamiento al siguiente nivel]
 ```
 
 ## Funcionalidades
@@ -53,7 +53,7 @@ flowchart LR
 |---|---|:-:|
 | Acceso y usuarios | Inicio de sesión con Google, roles Admin / Gestor / Usuario, auditoría y correos de cuenta | ✅ |
 | Áreas y SLA | Tiempo de primera respuesta y horario de atención por área | 🔜 |
-| Matriz de responsables | Responsable directo por usuario para escalamientos | 🔜 |
+| Matriz de escalamiento | Niveles por área; el ticket sube al siguiente nivel con menor carga | 🔜 |
 | Tickets | Formulario breve, propuestas del usuario y aprobación del gestor | 🔜 |
 | Notificaciones | Avisos en la aplicación y por correo, recordatorios de fechas compromiso | 🔜 |
 | Encuesta | Calificación del cliente con un solo clic desde el correo | 🔜 |

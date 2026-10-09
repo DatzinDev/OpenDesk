@@ -1,30 +1,32 @@
-# 03 — Matriz de responsables
+# 03 — Matriz de escalamiento
 
 ## Objetivo
-Saber siempre a quién sube un ticket cuando alguien escala o no responde a tiempo.
+Saber siempre a quién sube un ticket cuando alguien lo escala o no responde a tiempo, con una jerarquía
+por niveles fácil de leer.
 
 ## Reglas
-- RF-03.1 Las personas con rol Usuario pertenecen a un área y tienen como máximo **un** responsable
-  directo: otro Usuario activo **de la misma área**. Puede quedar vacío (tope de la cadena).
-- RF-03.2 La sección Áreas se organiza en tres pestañas: **Áreas y personas** (alta de áreas y asignación
-  de personas, editable en línea), **Matriz de escalamiento** (responsable directo por persona, agrupada por
-  área y editable en línea) y **Días festivos**.
-- RF-03.3 No se permiten ciclos (A → B → A). El sistema lo valida al guardar.
-- RF-03.4 Escalamiento (manual o automático) reasigna el ticket al responsable directo del
-  asignado actual; el asignado anterior queda en el historial.
-- RF-03.5 Si el asignado no tiene responsable directo (tope de la cadena), el ticket se
-  marca **"Requiere intervención del Gestor"** y no se reasigna.
-- RF-03.6 No se puede desactivar a un usuario que es responsable de otros: primero se les asigna otro
-  responsable. El sistema indica cuántas personas tiene a cargo.
-- RF-03.7 Si un usuario cambia de área, pierde su responsable directo y quienes lo tenían como
-  responsable quedan sin él, para que se reasignen dentro de su área.
+- RF-03.1 Cada área define su **número de niveles de escalamiento** (1 a 10; por defecto 3). El nivel 1
+  es el primer contacto y el nivel más alto es el último antes de la intervención del Gestor.
+- RF-03.2 Cada persona con rol Usuario pertenece a un área y ocupa **un nivel** dentro de ella. Al darla de
+  alta o cambiarla de área entra al nivel 1, salvo que se indique otro.
+- RF-03.3 Un nivel puede tener varias personas o ninguna.
+- RF-03.4 Al escalar (manual o automáticamente), el ticket sube al **siguiente nivel con personas activas**
+  de la misma área y se asigna a la persona de ese nivel con **menos tickets abiertos**. Toda reasignación
+  reinicia el SLA (ver 02).
+- RF-03.5 Si no hay un nivel superior con personas, el ticket se marca **"Requiere intervención del Gestor"**
+  y no se reasigna.
+- RF-03.6 Si un área reduce su número de niveles, quienes quedan por encima pasan al nivel más alto disponible.
+- RF-03.7 La sección Áreas se organiza en tres pestañas: **Áreas y personas** (alta de áreas y asignación de
+  personas, editable en línea), **Matriz de escalamiento** (niveles por área, con el más alto arriba; cada
+  persona se mueve de nivel desde su propia etiqueta) y **Días festivos**.
 
 ## Criterios de aceptación
-- A tiene responsable B; ticket de A vence SLA → queda asignado a B, A y B notificados.
-- B no tiene responsable; ticket de B vence SLA → bandera "Requiere intervención", Gestor notificado.
-- Intentar poner B → A cuando A → B ya existe → error de ciclo.
-- Intentar asignar como responsable a alguien de otra área → error.
-- Intentar desactivar a B mientras A lo tenga como responsable → error con el número de personas a cargo.
+- Área con 3 niveles; ticket de una persona de nivel 1 escala → se asigna a la persona del nivel 2 con menos
+  tickets abiertos.
+- Nivel 2 vacío → el ticket escala al nivel 3.
+- Ticket de una persona del nivel más alto escala → bandera "Requiere intervención", Gestor notificado.
+- Persona en nivel 3 cambia a un área con 2 niveles sin indicar nivel → queda en nivel 1.
+- Área de 3 niveles se reduce a 2 → quienes estaban en el nivel 3 pasan al 2.
 
 ## Evolución prevista
 La reasignación a un compañero del mismo nivel o el envío a otra área se definirán en el módulo de

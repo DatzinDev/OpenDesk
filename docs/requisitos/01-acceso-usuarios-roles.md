@@ -15,7 +15,7 @@ su rol necesita.
 - RF-01.5 Un usuario desactivado no puede iniciar sesión; su historial se conserva.
 
 ## Usuarios
-Campos mínimos: nombre, correo (Google), rol, área, responsable directo (ver 03), activo.
+Campos mínimos: nombre, correo (Google), rol, área, nivel de escalamiento (ver 03), activo.
 Foto y nombre se toman de Google en el primer login.
 
 - RF-01.6 Alta/edición/desactivación de usuarios (no se eliminan). El correo es editable (excepto el del
@@ -35,7 +35,7 @@ Foto y nombre se toman de Google en el primer login.
 | Acción | Admin | Gestor | Usuario |
 |---|:-:|:-:|:-:|
 | Crear / editar / desactivar usuarios | ✅ | ✅ (excepto cuentas Admin) | ❌ |
-| Asignar área y responsable directo | ✅ | ✅ | ❌ |
+| Asignar área y nivel de escalamiento | ✅ | ✅ | ❌ |
 | Crear / editar áreas y SLA | ✅ | ✅ | ❌ |
 | Parámetros globales técnicos (dominio permitido, zona horaria) | ✅ | ❌ | ❌ |
 | Parámetros funcionales (recordatorio, aviso SLA, texto encuesta) | ✅ | ✅ | ❌ |

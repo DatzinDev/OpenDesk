@@ -2,6 +2,18 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-08 — Matriz de escalamiento por niveles
+
+**Cambios**
+- El responsable directo por persona se sustituye por **niveles de escalamiento por área**. Cada área define cuántos niveles tiene y cada persona ocupa uno.
+- Matriz rediseñada: cada área muestra sus niveles del más alto al más bajo. El número de niveles se ajusta en la misma vista, y cada persona se mueve de nivel desde su etiqueta.
+- Migración: los usuarios existentes pasan al nivel 1 y las áreas a 3 niveles.
+- Datos de prueba con niveles asignados.
+
+**Decisiones**
+- Al escalar, el ticket sube al siguiente nivel con personas y se asigna a quien tenga menos tickets abiertos.
+- Si un área reduce sus niveles, quienes quedan arriba pasan al nivel más alto disponible.
+
 ## 2026-10-08 — Fase 2: áreas, SLA y matriz de responsables
 
 **Cambios**
@@ -9,17 +21,16 @@ Registro histórico del proyecto. Entradas en orden cronológico inverso; cada e
   - Alta y edición de áreas con tiempo de primera respuesta, horario de atención (24/7 o un horario propio para cada día de la semana) y pausa opcional en festivos.
   - Calendario de días festivos.
   - Cálculo del vencimiento del SLA según el horario del área.
-- Usuarios: el rol Usuario requiere un área; nuevo responsable directo con validación de misma área y sin ciclos.
+- Usuarios: el rol Usuario requiere un área.
 - Interfaz: sección Áreas con tres pestañas (áreas y personas, matriz de escalamiento y días festivos) y columna Área en Usuarios.
 - Auditoría de cambios en áreas y festivos.
-- Modo de datos de prueba (`DEV_SEED=true`): `api/seeds/dev.sql` carga 3 áreas, 2 gestores, 10 usuarios, una matriz de escalamiento y días festivos.
+- Modo de datos de prueba (`DEV_SEED=true`): `api/seeds/dev.sql` carga 3 áreas, 2 gestores, 10 usuarios distribuidos por niveles y días festivos.
 
 **Decisiones**
 - El calendario de festivos es de la organización; cada área decide si lo aplica.
 - Toda reasignación (manual, escalamiento o automática) reinicia el SLA completo.
 - Tras aceptar una actualización, el plazo vigente del ticket pasa a ser la fecha compromiso propuesta por el Usuario.
-- El responsable directo pertenece a la misma área. Reasignar a un compañero o a otra área se definirá en el módulo de tickets.
-- Admin y Gestor no pertenecen a un área. No se puede desactivar a quien tiene personas a cargo.
+- Admin y Gestor no pertenecen a un área. Reasignar a un compañero o a otra área se definirá en el módulo de tickets.
 
 ## 2026-10-08 — Cierre de la fase 1
 
