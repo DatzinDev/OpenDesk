@@ -1,5 +1,4 @@
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from sqlalchemy import func, select, update
@@ -7,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core import config
 from app.core.db import SessionLocal, now
-from app.modules import tickets, users
+from app.modules import settings, tickets, users
 from app.modules.notifications.models import Notification
 from app.modules.notifications.schemas import Inbox, NotificationOut
 from app.shared import mailer
@@ -20,7 +19,9 @@ ROLE_NAMES = {"admin": "Administrador", "gestor": "Gestor", "usuario": "Usuario"
 
 def _mail(to: str, subject: str, template: str, **ctx) -> None:
     body = _env.get_template(template).render(app_url=config.APP_URL, roles=ROLE_NAMES, **ctx)
-    mailer.send(to, subject, mailer.render(body))
+    with SessionLocal() as db:
+        org = settings.get(db, "org_name")
+    mailer.send(to, subject, mailer.render(body, org=org))
 
 
 def on_user_created(e: users.UserCreated) -> None:
@@ -43,8 +44,8 @@ def on_user_updated(e: users.UserUpdated) -> None:
 PROPOSALS = {"update": "una actualización", "escalate": "escalar", "close": "cerrar", "reassign": "reasignar"}
 
 
-def _local(dt) -> str:
-    return dt.astimezone(ZoneInfo(config.APP_TIMEZONE)).strftime("%d/%m/%Y %H:%M")
+def _local(db: Session, dt) -> str:
+    return dt.astimezone(settings.tz(db)).strftime("%d/%m/%Y %H:%M")
 
 
 def _messages(db: Session, e: tickets.TicketChanged, s: tickets.Summary) -> list[tuple[list[int], str, str, bool]]:
@@ -69,9 +70,9 @@ def _messages(db: Session, e: tickets.TicketChanged, s: tickets.Summary) -> list
             return [(managers, f"{f} requiere intervención del Gestor",
                      f"{s.title}\nNo hay un nivel superior con personas para escalarlo.", True)]
         case "sla_warning":
-            return [([d["to"]], f"Se consumió el 80 % del SLA de {f}", f"Vence el {_local(s.due_at)}.", False)]
+            return [([d["to"]], f"Se consumió el {settings.get(db, 'sla_warning_pct')} % del SLA de {f}", f"Vence el {_local(db, s.due_at)}.", False)]
         case "reminder":
-            return [([d["to"]], f"Tu fecha compromiso de {f} vence pronto", f"{s.title}\nVence el {_local(s.due_at)}.", True)]
+            return [([d["to"]], f"Tu fecha compromiso de {f} vence pronto", f"{s.title}\nVence el {_local(db, s.due_at)}.", True)]
         case "commitment_overdue":
             return [([d["to"], *managers], f"Venció la fecha compromiso de {f}",
                      f"{s.title}\nPropón una nueva actualización o el cierre.", True)]

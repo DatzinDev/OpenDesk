@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core import config
 from app.core.db import SessionLocal, now
-from app.modules import tickets, users
+from app.modules import settings, tickets, users
 from app.modules.surveys.events import SurveyAnswered
 from app.modules.surveys.models import Survey
 from app.modules.surveys.schemas import SurveyOut, SurveyStatus
@@ -17,8 +17,11 @@ from app.shared import mailer
 from app.shared.events import publish, subscribe
 
 VALID_DAYS = 7
-# ponytail: texto fijo; pasa a parámetros globales editables en el módulo 08.
-QUESTION = "¿Qué tan satisfecho quedaste con la atención a tu solicitud “{title}”?"
+
+
+def _question(db: Session, title: str) -> str:
+    """Pregunta configurable (08); {titulo} se reemplaza por el título de la solicitud."""
+    return settings.get(db, "survey_question").replace("{titulo}", title)
 
 _env = Environment(loader=FileSystemLoader(Path(__file__).parent / "templates"), autoescape=select_autoescape())
 
@@ -49,9 +52,9 @@ def send(db: Session, ticket_id: int) -> str | None:
                   expires_at=now() + timedelta(days=VALID_DAYS)))
     db.commit()
     body = _env.get_template("survey.html").render(
-        name=(t.client_name or "").split(" ")[0], question=QUESTION.format(title=t.title), folio=t.folio,
+        name=(t.client_name or "").split(" ")[0], question=_question(db, t.title), folio=t.folio,
         link=f"{config.APP_URL}/encuesta/{token}", days=VALID_DAYS)
-    mailer.send(t.client_email, f"¿Cómo te atendimos? ({t.folio})", mailer.render(body))
+    mailer.send(t.client_email, f"¿Cómo te atendimos? ({t.folio})", mailer.render(body, org=settings.get(db, "org_name")))
     return token
 
 
@@ -73,7 +76,7 @@ def status(db: Session, token: str) -> SurveyStatus:
     s = _find(db, token)
     t = tickets.summary(db, s.ticket_id)
     state = "answered" if s.rating else "expired" if _utc(s.expires_at) < now() else "pending"
-    return SurveyStatus(state=state, folio=t.folio, title=t.title, question=QUESTION.format(title=t.title),
+    return SurveyStatus(state=state, folio=t.folio, title=t.title, question=_question(db, t.title),
                         rating=s.rating, has_comment=bool(s.comment))
 
 

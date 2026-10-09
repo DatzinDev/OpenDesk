@@ -1,6 +1,6 @@
 import csv
 import io
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Literal
 from uuid import UUID
 
@@ -9,7 +9,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.modules import areas, identity, users
+from app.modules import areas, identity, settings, users
 from app.modules.analytics import service
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
@@ -18,14 +18,14 @@ Priority = Literal["alta", "media", "baja"]
 
 def _filters(db: Session, start: date | None, end: date | None, area_id: UUID | None, priority: str | None,
              user_id: int | None = None) -> service.Filters:
-    end = end or date.today()
+    end = end or datetime.now(settings.tz(db)).date()
     start = start or end - timedelta(days=29)
     if start > end or (end - start).days > 366:
         raise HTTPException(422, "El rango de fechas debe ser válido y de máximo un año.")
     area = areas.id_of(db, area_id)
     if area_id and not area:
         raise HTTPException(404, "Área no encontrada.")
-    return service.Filters.from_dates(start, end, area_id=area, priority=priority, user_id=user_id)
+    return service.Filters.from_dates(start, end, settings.tz(db), area_id=area, priority=priority, user_id=user_id)
 
 
 @router.get("/export.csv")

@@ -2,13 +2,11 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
-from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
-from app.core import config
 from app.core.db import now
-from app.modules import areas, users
+from app.modules import areas, settings, users
 from app.modules.tickets import repository as repo
 from app.modules.tickets.events import TicketChanged
 from app.modules.tickets.models import Attachment, Event, Ticket, TrackingStatus
@@ -86,8 +84,8 @@ def _area(db: Session, public_id: UUID | None):
     return areas.get(db, area_id) if area_id else None
 
 
-def _aware(dt: datetime) -> datetime:
-    return dt if dt.tzinfo else dt.replace(tzinfo=ZoneInfo(config.APP_TIMEZONE))
+def _aware(db: Session, dt: datetime) -> datetime:
+    return dt if dt.tzinfo else dt.replace(tzinfo=settings.tz(db))
 
 
 def _check_files(files: list[Upload]) -> None:
@@ -353,7 +351,7 @@ def propose(db: Session, actor: users.UserOut, ticket_id: UUID, data: ProposalIn
     _check_files(files)
     payload = {}
     if data.kind == "update":
-        due = _aware(data.due_at)
+        due = _aware(db, data.due_at)
         if due <= now():
             raise Conflict("La fecha tentativa debe ser futura.")
         payload["due_at"] = due.isoformat()
@@ -487,22 +485,23 @@ def _utc(dt: datetime) -> datetime:
 
 
 def sweep(db: Session, at: datetime | None = None) -> None:
-    """Revisa plazos: aviso al 80 % del SLA, auto-escalamiento, recordatorio y compromiso vencido."""
+    """Revisa plazos: aviso del SLA por consumir, auto-escalamiento, recordatorio y compromiso vencido."""
     at = at or now()
+    warn, remind = settings.get(db, "sla_warning_pct") / 100, timedelta(hours=settings.get(db, "reminder_hours"))
     for t in repo.open_tickets(db):
         start, due = _utc(t.due_from), _utc(t.due_at)
         if not t.committed:
             if due <= at and not t.needs_manager:
                 _cancel_pending(db, t)
                 _escalate(db, t, None, "auto")
-            elif not t.sla_warned and due > at and at >= start + (due - start) * 0.8:
+            elif not t.sla_warned and due > at and at >= start + (due - start) * warn:
                 t.sla_warned = True
                 _queue(db, t, "sla_warning", None, {"to": t.assignee_id})
         elif due <= at and not t.overdue_notified:
             t.overdue_notified = True
             _event(db, t, "commitment_overdue", None)
             _queue(db, t, "commitment_overdue", None, {"to": t.assignee_id})
-        elif not t.reminded and due > at and at >= due - timedelta(hours=config.REMINDER_HOURS):
+        elif not t.reminded and due > at and at >= due - remind:
             t.reminded = True
             _queue(db, t, "reminder", None, {"to": t.assignee_id})
     _flush(db)

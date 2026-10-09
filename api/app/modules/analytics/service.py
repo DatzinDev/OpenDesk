@@ -6,7 +6,6 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
-from app.core import config
 from app.core.db import now
 from app.modules.analytics import repository as repo
 
@@ -23,13 +22,14 @@ class Filters:
     priority: str | None = None
     user_id: int | None = None
 
+    tz: ZoneInfo = ZoneInfo("UTC")
+
     @classmethod
-    def from_dates(cls, start: date, end: date, **kw) -> "Filters":
+    def from_dates(cls, start: date, end: date, tz: ZoneInfo, **kw) -> "Filters":
         """Días locales completos: [start 00:00, end + 1 día 00:00) en la zona horaria de la organización."""
-        tz = ZoneInfo(config.APP_TIMEZONE)
         a = datetime.combine(start, datetime.min.time(), tz).astimezone(timezone.utc)
         b = datetime.combine(end + timedelta(days=1), datetime.min.time(), tz).astimezone(timezone.utc)
-        return cls(a, b, **kw)
+        return cls(a, b, tz=tz, **kw)
 
 
 # --- utilidades ------------------------------------------------------------------------------------
@@ -65,12 +65,12 @@ def _hours(a, b) -> float:
     return (b - a).total_seconds() / 3600
 
 
-def _local(dt) -> datetime:
-    return dt.astimezone(ZoneInfo(config.APP_TIMEZONE))
+def _local(dt, tz: ZoneInfo) -> datetime:
+    return dt.astimezone(tz)
 
 
-def _week(dt) -> str:
-    d = _local(dt).date()
+def _week(dt, tz: ZoneInfo) -> str:
+    d = _local(dt, tz).date()
     return (d - timedelta(days=d.weekday())).isoformat()
 
 
@@ -153,9 +153,9 @@ def _both(d: Data, fn):
 
 
 def _days(d: Data):
-    day = _local(d.f.start).date()
+    day = _local(d.f.start, d.f.tz).date()
     while True:
-        a = datetime.combine(day, datetime.min.time(), ZoneInfo(config.APP_TIMEZONE)).astimezone(timezone.utc)
+        a = datetime.combine(day, datetime.min.time(), d.f.tz).astimezone(timezone.utc)
         if a >= d.f.end:
             return
         yield day, a, a + timedelta(days=1)
@@ -165,7 +165,7 @@ def _days(d: Data):
 def _weeks(d: Data, items, when, value=len):
     groups = defaultdict(list)
     for x in items:
-        groups[_week(when(x))].append(x)
+        groups[_week(when(x), d.f.tz)].append(x)
     return [{"semana": w, "valor": value(xs)} for w, xs in sorted(groups.items())]
 
 
@@ -208,7 +208,7 @@ def times(d: Data) -> dict:
     for e in ok + autos:
         met = bool(e["data"].get("sla_met"))
         area = d.by_id[e["ticket_id"]]["area_id"]
-        for key, bucket in ((_week(e["created_at"]), weekly), (area, by_area)):
+        for key, bucket in ((_week(e["created_at"], d.f.tz), weekly), (area, by_area)):
             bucket[key][0] += met
             bucket[key][1] += 1
     res = Counter(_bucket(h) for h in d.resolution(f.start, f.end))
@@ -281,7 +281,7 @@ def flow(d: Data) -> dict:
     esc = [e for e in moves if e["data"].get("reason") in ("escalate", "auto")]
     weekly = defaultdict(lambda: {"manuales": 0, "automaticos": 0})
     for e in esc:
-        weekly[_week(e["created_at"])]["automaticos" if e["data"]["reason"] == "auto" else "manuales"] += 1
+        weekly[_week(e["created_at"], d.f.tz)]["automaticos" if e["data"]["reason"] == "auto" else "manuales"] += 1
     pairs = Counter()
     for e in moves:
         origin = (d.names["users"].get(e["data"].get("from")) or {}).get("area_id")
@@ -318,7 +318,7 @@ def clients(d: Data) -> dict:
     closed = d.closed(f.start, f.end)
     weekly = defaultdict(list)
     for s in answered:
-        weekly[_week(s["answered_at"])].append(s["rating"])
+        weekly[_week(s["answered_at"], d.f.tz)].append(s["rating"])
     comments = sorted((s for s in answered if s["comment"]), key=lambda s: s["answered_at"], reverse=True)[:8]
     return {
         "kpis": {
@@ -342,7 +342,7 @@ def clients(d: Data) -> dict:
 def demand(d: Data) -> dict:
     f = d.f
     created = d.created(f.start, f.end)
-    heat = Counter((_local(t["created_at"]).weekday(), _local(t["created_at"]).hour) for t in created)
+    heat = Counter((_local(t["created_at"], f.tz).weekday(), _local(t["created_at"], f.tz).hour) for t in created)
     days = max(1, round(d.span / timedelta(days=1)))
     return {
         "kpis": {
@@ -386,7 +386,7 @@ def export_rows(db: Session, f: Filters):
     ratings = {s["ticket_id"]: s["rating"] for s in sorted(d.surveys, key=lambda s: s["sent_at"])}
     yield ["Folio", "Título", "Área", "Asignado", "Prioridad", "Estado", "Resultado", "Cliente", "Correo del cliente",
            "Creado", "Cerrado", "Plazo vigente", "Con compromiso", "Estatus de seguimiento", "CSAT"]
-    fmt = lambda dt: _local(dt).strftime("%Y-%m-%d %H:%M") if dt else ""
+    fmt = lambda dt: _local(dt, f.tz).strftime("%Y-%m-%d %H:%M") if dt else ""
     for t in sorted(d.created(f.start, f.end), key=lambda t: t["id"]):
         yield [f"OD-{t['id']:06d}", t["title"], d.area(t["area_id"]), d.user(t["assignee_id"]), t["priority"],
                t["status"], t["outcome"] or "", t["client_name"] or "", t["client_email"] or "", fmt(t["created_at"]),

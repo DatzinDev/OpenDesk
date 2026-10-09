@@ -1,10 +1,8 @@
 from datetime import date, datetime, time
 from uuid import UUID
-from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
-from app.core import config
 from app.modules.areas import repository as repo
 from app.modules.areas import sla
 from app.modules.areas.events import AreaSaved, HolidaysChanged
@@ -104,4 +102,5 @@ def sla_deadline(db: Session, area_id: int, start: datetime) -> datetime:
         week=tuple((time.fromisoformat(w[0]), time.fromisoformat(w[1])) if w else None for w in area.week),
         holidays=frozenset(h.day for h in repo.holidays(db)) if area.pause_on_holidays else frozenset(),
     )
-    return sla.deadline(start, area.sla_hours, schedule, ZoneInfo(config.APP_TIMEZONE))
+    from app.modules import settings  # importación diferida: settings no depende de áreas
+    return sla.deadline(start, area.sla_hours, schedule, settings.tz(db))

@@ -1,12 +1,13 @@
 import hashlib
 import secrets
-from datetime import timedelta
+from datetime import timedelta, timezone
 
 from sqlalchemy import delete
 from sqlalchemy.orm import Session as DB
 
+from app.core import config
 from app.core.db import SessionLocal, now
-from app.modules import users
+from app.modules import settings, users
 from app.modules.identity.events import LoginDenied, LoginSucceeded
 from app.modules.identity.models import Session
 from app.shared.events import publish, subscribe
@@ -20,6 +21,10 @@ def _hash(token: str) -> str:
 
 def login(db: DB, email: str, name: str | None, picture: str | None) -> str | None:
     """Devuelve un token de sesión, o None si el correo no tiene acceso."""
+    domain = settings.get(db, "allowed_domain")
+    if domain and not email.lower().endswith("@" + domain) and email.lower() != config.ADMIN_EMAIL:
+        publish(LoginDenied(email=email.lower(), reason="dominio no permitido"))
+        return None
     user = users.get_by_email(db, email)
     if not user or not user.is_active:
         publish(LoginDenied(email=email.lower(), reason="no registrado" if not user else "inactivo"))
@@ -35,7 +40,8 @@ def login(db: DB, email: str, name: str | None, picture: str | None) -> str | No
 
 def resolve(db: DB, token: str) -> users.UserOut | None:
     s = db.get(Session, _hash(token))
-    if not s or s.expires_at < now():
+    # SQLite devuelve fechas sin zona horaria; PostgreSQL las conserva.
+    if not s or (s.expires_at if s.expires_at.tzinfo else s.expires_at.replace(tzinfo=timezone.utc)) < now():
         return None
     user = users.get(db, s.user_id)
     return user if user and user.is_active else None
