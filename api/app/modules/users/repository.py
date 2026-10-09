@@ -19,8 +19,8 @@ def list_(db: Session, exclude_admins: bool) -> list[User]:
     return list(db.scalars(q))
 
 
-def subordinates(db: Session, user_id: int) -> list[User]:
-    return list(db.scalars(select(User).where(User.manager_id == user_id)))
+def in_area_above_level(db: Session, area_id: int, level: int) -> list[User]:
+    return list(db.scalars(select(User).where(User.area_id == area_id, User.level > level)))
 
 
 def add(db: Session, user: User) -> User:

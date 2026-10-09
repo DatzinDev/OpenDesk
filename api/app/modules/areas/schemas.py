@@ -11,6 +11,7 @@ class AreaIn(BaseModel):
     week: list[tuple[time, time] | None] = Field(
         default_factory=lambda: [(time(9), time(18))] * 5 + [None, None], min_length=7, max_length=7
     )
+    levels: int = Field(default=3, ge=1, le=10)
     pause_on_holidays: bool = False
     is_active: bool = True
 

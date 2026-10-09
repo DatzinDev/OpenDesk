@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.modules import identity
 from app.modules.users import service
-from app.modules.users.schemas import ManagerUpdate, UserCreate, UserOut, UserUpdate
+from app.modules.users.schemas import UserCreate, UserOut, UserUpdate
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 staff = identity.require_roles("admin", "gestor")
@@ -35,7 +35,3 @@ def create_user(data: UserCreate, actor: UserOut = Depends(staff), db: Session =
 def update_user(user_id: int, data: UserUpdate, actor: UserOut = Depends(staff), db: Session = Depends(get_db)):
     return _call(service.update_user, db, actor, user_id, data)
 
-
-@router.put("/{user_id}/manager", response_model=UserOut)
-def set_manager(user_id: int, data: ManagerUpdate, actor: UserOut = Depends(staff), db: Session = Depends(get_db)):
-    return _call(service.set_manager, db, actor, user_id, data)

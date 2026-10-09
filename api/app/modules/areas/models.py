@@ -16,6 +16,7 @@ class Area(Base):
     always_open: Mapped[bool] = mapped_column(Boolean, default=True)
     # 7 entradas (0 = lunes): ["09:00", "18:00"] o null si ese día no se atiende.
     week: Mapped[list] = mapped_column(JSON, default=lambda: [["09:00", "18:00"]] * 5 + [None, None])
+    levels: Mapped[int] = mapped_column(Integer, default=3)  # niveles de escalamiento; 1 = primer contacto
     pause_on_holidays: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

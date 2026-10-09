@@ -16,6 +16,7 @@ from app.modules.users.router import router as users_router
 async def lifespan(_: FastAPI):
     audit.register()
     identity.register()
+    users.register()
     notifications.register()
     with SessionLocal() as db:
         users.ensure_root(db, config.ADMIN_EMAIL)

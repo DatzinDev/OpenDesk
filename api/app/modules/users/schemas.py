@@ -15,7 +15,7 @@ class UserOut(BaseModel):
     picture: str | None
     role: Role
     area_id: int | None
-    manager_id: int | None
+    level: int | None
     is_active: bool
     is_root: bool
     created_at: datetime
@@ -27,6 +27,7 @@ class UserCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     role: Role
     area_id: int | None = None
+    level: int | None = None
 
 
 class UserUpdate(BaseModel):
@@ -34,8 +35,5 @@ class UserUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=120)
     role: Role | None = None
     area_id: int | None = None
+    level: int | None = None
     is_active: bool | None = None
-
-
-class ManagerUpdate(BaseModel):
-    manager_id: int | None
