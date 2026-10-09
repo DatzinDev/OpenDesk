@@ -14,6 +14,7 @@ Registro histórico del proyecto. Entradas en orden cronológico inverso; cada e
   - diagrama de servicios;
   - hoja de ruta y tabla de documentación.
 - Se corrigen descripciones que ya no aplicaban: el Administrador aún no tiene pantalla de parámetros ni de auditoría, y faltaban el worker, el almacenamiento y varias variables.
+- README reescrito después como página de producto: el problema que resuelve, cómo cambia el día a día, qué incluye, la analítica, los roles y por qué código abierto. La parte técnica pasa a `docs/instalacion.md` (inicio rápido, configuración, producción, servicios y desarrollo).
 - Nueva `CONTRIBUTING.md` con el entorno, las reglas de código, las pruebas y la convención de commits.
 - `.env.example` documenta las variables opcionales `APP_TIMEZONE`, `REMINDER_HOURS` y `WEB_PORT`.
 
