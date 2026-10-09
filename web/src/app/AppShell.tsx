@@ -1,6 +1,6 @@
 import { ActionIcon, AppShell as Shell, Avatar, Burger, Group, Stack, Text, Tooltip } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconBuilding, IconChartBar, IconChecklist, IconInbox, IconLogout, IconUsers, type Icon } from "@tabler/icons-react";
+import { IconBuilding, IconChartBar, IconChecklist, IconHistory, IconInbox, IconLogout, IconSettings, IconUsers, type Icon } from "@tabler/icons-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useLogout, useMe } from "@/features/auth";
 import { NotificationBell } from "@/features/notifications";
@@ -16,6 +16,8 @@ const NAV: NavItem[] = [
   { to: "/analitica", label: "Analítica", icon: IconChartBar },
   { to: "/usuarios", label: "Usuarios", icon: IconUsers, roles: ["admin", "gestor"] },
   { to: "/areas", label: "Áreas", icon: IconBuilding, roles: ["admin", "gestor"] },
+  { to: "/configuracion", label: "Configuración", icon: IconSettings, roles: ["admin", "gestor"] },
+  { to: "/auditoria", label: "Auditoría", icon: IconHistory, roles: ["admin"] },
 ];
 
 export function AppShell() {
