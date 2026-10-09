@@ -55,7 +55,7 @@ flowchart LR
 | Áreas y SLA | Tiempo de primera respuesta y horario de atención por área | 🚧 |
 | Matriz de escalamiento | Niveles por área; el ticket sube al siguiente nivel con menor carga | 🚧 |
 | Tickets | Formulario breve, propuestas del usuario (actualizar, escalar, reasignar, cerrar), aprobación del gestor y adjuntos | 🚧 |
-| Notificaciones | Avisos en la aplicación y por correo, recordatorios de fechas compromiso | 🔜 |
+| Notificaciones | Campana de avisos y correo, auto-escalamiento por SLA vencido, recordatorios y cronómetro de plazos | 🚧 |
 | Encuesta | Calificación del cliente con un solo clic desde el correo | 🔜 |
 | Analítica | KPIs, tendencias y cumplimiento de SLA en tiempo real | 🔜 |
 
@@ -93,6 +93,7 @@ La cuenta definida en `ADMIN_EMAIL` es el Administrador principal y puede dar de
 | `MAIL_FROM` / `MAIL_FROM_NAME` | Remitente de los correos |
 | `ADMIN_EMAIL` | Correo del Administrador principal |
 | `S3_ACCESS_KEY` / `S3_SECRET_KEY` / `S3_BUCKET` | Credenciales del almacenamiento de adjuntos (servicio `storage`, SeaweedFS) |
+| `REMINDER_HOURS` | Horas de anticipación del recordatorio de fecha compromiso (por defecto 24) |
 | `DEV_SEED` | `true` para cargar datos ficticios de prueba al iniciar |
 
 ### Producción

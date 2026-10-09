@@ -22,6 +22,7 @@
 |---|---|---|
 | `db` | PostgreSQL 16 con volumen persistente | interno |
 | `api` | FastAPI (uvicorn); aplica migraciones al iniciar | interno (8000) |
+| `worker` | Misma imagen que `api`; ejecuta `python -m app.worker`, que revisa plazos cada minuto | sin puerto |
 | `storage` | SeaweedFS (`weed mini`) con API S3 y volumen persistente; guarda los adjuntos | interno (8333) |
 | `web` | Servidor Vite; sirve la SPA y redirige `/api` hacia `api` | **8080** |
 
@@ -42,6 +43,7 @@ Ver `.env.example`. Las credenciales nunca se exponen en la interfaz.
 | `ADMIN_EMAIL` | Cuenta del Admin principal (inmutable desde la aplicación). |
 | `APP_TIMEZONE` | Zona horaria para el cálculo de SLA (por defecto `America/Mexico_City`). |
 | `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET` | Credenciales y bucket del almacenamiento de adjuntos. |
+| `REMINDER_HOURS` | Anticipación del recordatorio de fecha compromiso (por defecto 24). |
 | `DEV_SEED` | `true` ejecuta `api/seeds/dev.sql` al iniciar: datos ficticios idempotentes para pruebas. |
 
 ## 2. Arquitectura general
@@ -64,6 +66,7 @@ api/
 ├── alembic/                  migraciones (una por cambio de esquema)
 ├── app/
 │   ├── main.py               ensambla la aplicación: middlewares y routers de cada módulo
+│   ├── worker.py             proceso en segundo plano: revisión de plazos cada minuto
 │   ├── core/                 infraestructura técnica sin lógica de negocio
 │   │   ├── config.py         lectura de variables de entorno
 │   │   └── db.py             engine, sesión y Base declarativa
@@ -155,7 +158,8 @@ web/src/
     │   └── index.ts          API pública de la feature
     ├── users/                misma forma
     ├── areas/
-    └── tickets/              bandeja, mis actividades y detalle de ticket
+    ├── tickets/              bandeja, mis actividades y detalle de ticket
+    └── notifications/        campana de avisos
 ```
 
 ### Reglas de dependencia
