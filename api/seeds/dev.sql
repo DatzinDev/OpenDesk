@@ -101,3 +101,11 @@ BEGIN
   VALUES (t, 'reassign', u, 'Es una falla de la regla de precios en el sistema, no de facturación.',
           json_build_object('area_id', (SELECT id FROM areas_areas WHERE name = 'Soporte técnico')), 'pending');
 END $$;
+
+-- Encuesta contestada para el ticket cerrado de ejemplo (token ficticio: no hay enlace válido).
+INSERT INTO surveys_surveys (ticket_id, email, token_hash, sent_at, expires_at, rating, comment, answered_at)
+SELECT t.id, t.client_email, md5(random()::text) || md5(random()::text), t.closed_at, t.closed_at + interval '7 days',
+       4, 'Rápidos y amables; tardaron un poco en confirmar los accesos.', t.closed_at + interval '3 hours'
+FROM tickets_tickets t
+WHERE t.title = 'Alta de usuarios para nueva sucursal'
+  AND NOT EXISTS (SELECT 1 FROM surveys_surveys s WHERE s.ticket_id = t.id);
