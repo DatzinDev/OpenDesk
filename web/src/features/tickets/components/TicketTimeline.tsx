@@ -5,9 +5,9 @@ import {
   IconCalendarEvent,
   IconCircleCheck,
   IconFileText,
-  IconMessage,
   IconPlus,
   IconRefresh,
+  IconTag,
   IconTrendingUp,
   type Icon,
 } from "@tabler/icons-react";
@@ -22,7 +22,7 @@ const ICONS: Record<TicketEvent["kind"], Icon> = {
   close: IconCircleCheck,
   reassign: IconArrowsExchange,
   assigned: IconArrowsExchange,
-  comment: IconMessage,
+  status: IconTag,
   closed: IconCircleCheck,
   reopened: IconRefresh,
   needs_manager: IconAlertTriangle,
@@ -64,8 +64,8 @@ export function TicketTimeline({ ticket }: { ticket: TicketDetail }) {
           : `${by} propone enviar el ticket a ${areaName(e.data.area_id)}`;
       case "assigned":
         return `${REASONS[e.data.reason ?? "manual"]} ${who(e.data.to)}${e.data.reason === "reassign" || e.data.reason === "manual" ? ` (${areaName(e.data.area_id)})` : ""}`;
-      case "comment":
-        return `${by} comentó`;
+      case "status":
+        return e.data.name ? `${by} cambió el estatus a «${e.data.name}»` : `${by} quitó el estatus de seguimiento`;
       case "closed":
         return `${by} cerró el ticket como ${OUTCOME_LABELS[e.data.outcome!]}`;
       case "reopened":

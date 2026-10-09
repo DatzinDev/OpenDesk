@@ -2,6 +2,7 @@ import { Badge, Button, Paper, Stack, Table, Tabs, Text } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { StatusCatalog } from "@/features/tickets";
 import { AreaAssignment, EscalationMatrix, useUsers } from "@/features/users";
 import { PageHeader } from "@/shared/ui";
 import { AreaDrawer } from "../components/AreaDrawer";
@@ -35,6 +36,7 @@ export function AreasPage() {
           <Tabs.Tab value="areas">Áreas y personas</Tabs.Tab>
           <Tabs.Tab value="matriz">Matriz de escalamiento</Tabs.Tab>
           <Tabs.Tab value="festivos">Días festivos</Tabs.Tab>
+          <Tabs.Tab value="estatus">Estatus</Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="areas">
@@ -108,6 +110,10 @@ export function AreasPage() {
         </Tabs.Panel>
         <Tabs.Panel value="festivos">
           <HolidaysCard />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="estatus">
+          <StatusCatalog />
         </Tabs.Panel>
       </Tabs>
       <AreaDrawer opened={drawer.open} area={drawer.area} onClose={() => setDrawer((d) => ({ ...d, open: false }))} />

@@ -8,6 +8,7 @@ import { PageHeader } from "@/shared/ui";
 import { ActionModal, type StaffAction } from "../components/ActionModal";
 import { DueLabel, ManagerFlag, PriorityBadge, StatusBadge, dateFmt } from "../components/Badges";
 import { TicketDrawer } from "../components/TicketDrawer";
+import { useTrackingName } from "../components/TrackingSelect";
 import { useTickets } from "../hooks";
 import { PROPOSAL_LABELS, STATUS_LABELS, type Status, type Ticket } from "../types";
 
@@ -34,6 +35,7 @@ export function InboxPage() {
     assignee_id: assigneeId ?? undefined,
     q: q.trim() || undefined,
   });
+  const trackingName = useTrackingName();
   const areaName = (id: number) => areas.find((a) => a.id === id)?.name ?? "";
   const open = (t: Ticket) => navigate(`/tickets/${t.id}`);
 
@@ -148,6 +150,11 @@ export function InboxPage() {
                   </Table.Td>
                   <Table.Td>
                     <StatusBadge ticket={t} />
+                    {t.status_id && (
+                      <Text size="xs" c="dimmed" mt={4}>
+                        {trackingName(t.status_id)}
+                      </Text>
+                    )}
                   </Table.Td>
                   <Table.Td>
                     <DueLabel ticket={t} />

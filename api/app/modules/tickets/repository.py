@@ -1,7 +1,7 @@
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from app.modules.tickets.models import Attachment, Event, Ticket
+from app.modules.tickets.models import Attachment, Event, Ticket, TrackingStatus
 
 OPEN = ("asignado", "pendiente", "seguimiento")
 
@@ -32,6 +32,18 @@ def list_(db: Session, *, assignee_id=None, area_id=None, status=None, q=None) -
         query = query.where(or_(cond, Ticket.id == int(digits)) if digits else cond)
     # ponytail: sin paginación; agregarla cuando la bandeja supere unos miles de tickets.
     return list(db.scalars(query))
+
+
+def statuses(db: Session) -> list[TrackingStatus]:
+    return list(db.scalars(select(TrackingStatus).order_by(TrackingStatus.is_active.desc(), TrackingStatus.name)))
+
+
+def get_status(db: Session, status_id: int) -> TrackingStatus | None:
+    return db.get(TrackingStatus, status_id)
+
+
+def status_by_name(db: Session, name: str) -> TrackingStatus | None:
+    return db.scalar(select(TrackingStatus).where(TrackingStatus.name.ilike(name)))
 
 
 def pending(db: Session, ticket_id: int) -> Event | None:

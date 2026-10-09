@@ -24,9 +24,20 @@ class Ticket(Base):
     due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     committed: Mapped[bool] = mapped_column(Boolean, default=False)
     needs_manager: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Estatus de seguimiento elegido por el Gestor del catálogo editable; no altera el flujo.
+    status_id: Mapped[int | None] = mapped_column(ForeignKey("tickets_statuses.id"))
     created_by: Mapped[int] = mapped_column(ForeignKey("users_users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class TrackingStatus(Base):
+    """Catálogo global de estatus de seguimiento (p. ej. "Esperando al cliente")."""
+    __tablename__ = "tickets_statuses"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(60), unique=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
 class Event(Base):

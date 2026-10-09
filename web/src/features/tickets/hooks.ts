@@ -8,6 +8,13 @@ export const usePeers = (enabled: boolean) => useQuery({ queryKey: ["peers"], qu
 export const usePeople = (areaId: number | null) =>
   useQuery({ queryKey: ["people", areaId], queryFn: () => ticketsApi.people(areaId!), enabled: !!areaId });
 
+export const useStatuses = () => useQuery({ queryKey: ["ticket-statuses"], queryFn: ticketsApi.statuses });
+
+export function useSaveStatus() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: ticketsApi.saveStatus, onSuccess: () => qc.invalidateQueries({ queryKey: ["ticket-statuses"] }) });
+}
+
 /** Toda acción sobre un ticket refresca la lista y el detalle. */
 export function useTicketAction<A, R = unknown>(fn: (args: A) => Promise<R>) {
   const qc = useQueryClient();

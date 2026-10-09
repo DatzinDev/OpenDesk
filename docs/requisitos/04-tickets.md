@@ -58,13 +58,24 @@ Cualquier Gestor o Admin puede decidir cualquier propuesta.
   - Cerrar: el Gestor marca **Resuelto** o **No resuelto**.
 - RF-04.8 **Rechazar** (comentario obligatorio): el ticket vuelve a "En seguimiento" si ya tenía
   compromiso, o a "Asignado" si no; el Usuario debe proponer otra acción.
-- RF-04.9 Además, el Gestor puede en cualquier momento **reasignar** a cualquier persona, **cerrar
-  directamente** (Resuelto / No resuelto, con comentario) y **comentar**. Si había una propuesta
-  pendiente, queda **cancelada**.
+- RF-04.9 Además, el Gestor puede en cualquier momento **reasignar** a cualquier persona y **cerrar
+  directamente** (Resuelto / No resuelto, con comentario). Si había una propuesta pendiente, queda
+  **cancelada**.
 - RF-04.10 El Gestor puede **reabrir** un ticket cerrado (comentario obligatorio): vuelve a "Asignado"
   con la última persona asignada y reinicia el SLA.
 - RF-04.11 Toda asignación (creación, escalamiento, reasignación o reapertura) reinicia el SLA con la
   configuración vigente del área destino y descarta la fecha compromiso anterior.
+
+## Estatus de seguimiento
+- RF-04.17 Existe un **catálogo global de estatus de seguimiento** (por ejemplo, "Esperando al cliente" o
+  "Con proveedor"), editable por Admin y Gestor en la pestaña **Estatus** de la sección Áreas. Los estatus
+  no se eliminan; se desactivan.
+- RF-04.18 El Gestor fija el estatus de seguimiento de un ticket abierto desde su detalle. Es informativo:
+  no cambia el estado del flujo ni el plazo, y cada cambio queda en el historial.
+
+## Historial
+- RF-04.19 El historial muestra solo el progreso del ticket: creación, asignaciones, propuestas con su
+  descripción, decisiones, cambios de estatus, cierre y reapertura. No admite comentarios sueltos.
 
 ## Plazos
 - RF-04.12 El plazo vigente es el SLA de primera respuesta o, tras aceptar una actualización, la
@@ -74,7 +85,7 @@ Cualquier Gestor o Admin puede decidir cualquier propuesta.
 
 ## Adjuntos
 - RF-04.14 Se pueden adjuntar **imágenes y PDF** (hasta 5 archivos de 10 MB por acción) al crear el
-  ticket, al enviar una propuesta y en los comentarios del Gestor.
+  ticket y al enviar una propuesta.
 - RF-04.15 Los archivos se guardan en un almacenamiento compatible con S3 dentro del despliegue y
   solo se descargan a través de la aplicación, por personas que pueden ver el ticket.
 
@@ -87,7 +98,8 @@ Cualquier Gestor o Admin puede decidir cualquier propuesta.
 - **Gestor, "Bandeja"**: arriba las propuestas por decidir (aceptar o rechazar); abajo todos los
   tickets con filtros por estado, área y asignado, y búsqueda por folio o título.
 - **Detalle de ticket**: datos, semáforo, línea de tiempo (creación, asignaciones, propuestas,
-  decisiones, comentarios, cierre y reapertura) con sus adjuntos, y las acciones según el rol.
+  decisiones, cambios de estatus, cierre y reapertura) con sus adjuntos, el estatus de seguimiento y las
+  acciones según el rol.
 
 ## Criterios de aceptación
 - Crear ticket con los campos obligatorios → folio asignado, estado Asignado, SLA corriendo, aparece en "Mis actividades" del asignado.
@@ -106,3 +118,5 @@ Cualquier Gestor o Admin puede decidir cualquier propuesta.
 - Folio visible `OD-000123`.
 - Un ticket cerrado se puede reabrir, solo por el Gestor.
 - Cualquier Gestor o Admin decide las propuestas, no solo quien creó el ticket.
+- El historial es solo de progreso: se retira la acción "Comentar" del Gestor.
+- Catálogo de estatus de seguimiento único para toda la organización.

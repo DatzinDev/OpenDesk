@@ -10,9 +10,9 @@ from app.core.db import now
 from app.modules import areas, users
 from app.modules.tickets import repository as repo
 from app.modules.tickets.events import TicketChanged
-from app.modules.tickets.models import Attachment, Event, Ticket
-from app.modules.tickets.schemas import (CloseIn, CommentIn, DecisionIn, EventOut, Person, ProposalIn, ReassignIn,
-                                         ReopenIn, TicketDetail, TicketIn, TicketOut)
+from app.modules.tickets.models import Attachment, Event, Ticket, TrackingStatus
+from app.modules.tickets.schemas import (CloseIn, DecisionIn, EventOut, Person, ProposalIn, ReassignIn, ReopenIn,
+                                         SetStatusIn, StatusIn, StatusOut, TicketDetail, TicketIn, TicketOut)
 from app.shared import storage
 from app.shared.events import publish
 
@@ -318,12 +318,38 @@ def close(db: Session, actor: users.UserOut, ticket_id: int, data: CloseIn) -> T
     return _done(db, actor.id, t, "closed", {"outcome": data.outcome})
 
 
-def comment(db: Session, actor: users.UserOut, ticket_id: int, data: CommentIn, files: list[Upload] = ()) -> TicketDetail:
+def set_status(db: Session, actor: users.UserOut, ticket_id: int, data: SetStatusIn) -> TicketDetail:
     _require_staff(actor)
     t = _visible(db, actor, ticket_id)
-    _check_files(files)
-    _event(db, t, "comment", actor.id, data.comment, files=files)
-    return _done(db, actor.id, t, "comment")
+    _open(t)
+    st = repo.get_status(db, data.status_id) if data.status_id else None
+    if data.status_id and (not st or not st.is_active):
+        raise Conflict("Elige un estatus activo del catálogo.")
+    if t.status_id == data.status_id:
+        return _detail(db, t)
+    t.status_id = data.status_id
+    _event(db, t, "status", actor.id, data={"name": st.name if st else None})
+    return _done(db, actor.id, t, "status", {"name": st.name if st else None})
+
+
+# --- Catálogo de estatus ----------------------------------------------------------------------------
+
+def list_statuses(db: Session) -> list[StatusOut]:
+    return [StatusOut.model_validate(x) for x in repo.statuses(db)]
+
+
+def save_status(db: Session, actor: users.UserOut, data: StatusIn, status_id: int | None = None) -> StatusOut:
+    _require_staff(actor)
+    name = data.name.strip()
+    other = repo.status_by_name(db, name)
+    if other and other.id != status_id:
+        raise Conflict("Ya existe un estatus con ese nombre.")
+    st = repo.get_status(db, status_id) if status_id else repo.add(db, TrackingStatus(name=name))
+    if not st:
+        raise NotFound
+    st.name, st.is_active = name, data.is_active
+    db.commit()
+    return StatusOut.model_validate(st)
 
 
 def reopen(db: Session, actor: users.UserOut, ticket_id: int, data: ReopenIn) -> TicketDetail:

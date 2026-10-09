@@ -51,8 +51,19 @@ class CloseIn(BaseModel):
     comment: str = Field(min_length=1, max_length=5000)
 
 
-class CommentIn(BaseModel):
-    comment: str = Field(min_length=1, max_length=5000)
+class StatusIn(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+    is_active: bool = True
+
+
+class StatusOut(StatusIn):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+
+
+class SetStatusIn(BaseModel):
+    status_id: int | None
 
 
 class AttachmentOut(BaseModel):
@@ -101,6 +112,7 @@ class TicketOut(BaseModel):
     due_at: datetime
     committed: bool
     needs_manager: bool
+    status_id: int | None
     created_by: int
     created_at: datetime
     closed_at: datetime | None

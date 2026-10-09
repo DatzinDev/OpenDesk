@@ -5,9 +5,8 @@ import { useAreas } from "@/features/areas";
 import { ticketsApi } from "../api";
 import { usePeople, useTicketAction } from "../hooks";
 import { OUTCOME_LABELS, PROPOSAL_LABELS, type Outcome, type Ticket } from "../types";
-import { FilesField, filesOk } from "./FilesField";
 
-export type StaffAction = "accept" | "reject" | "reassign" | "close" | "comment" | "reopen";
+export type StaffAction = "accept" | "reject" | "reassign" | "close" | "reopen";
 
 type Props = { ticket: Ticket | null; action: StaffAction | null; onClose: () => void };
 
@@ -16,7 +15,6 @@ const TITLES: Record<StaffAction, string> = {
   reject: "Rechazar propuesta",
   reassign: "Reasignar ticket",
   close: "Cerrar ticket",
-  comment: "Agregar comentario",
   reopen: "Reabrir ticket",
 };
 
@@ -25,7 +23,6 @@ const DONE: Record<StaffAction, string> = {
   reject: "Propuesta rechazada.",
   reassign: "Ticket reasignado.",
   close: "Ticket cerrado.",
-  comment: "Comentario agregado.",
   reopen: "Ticket reabierto.",
 };
 
@@ -38,7 +35,6 @@ export function ActionModal({ ticket, action, onClose }: Props) {
   const [outcome, setOutcome] = useState<Outcome>("resuelto");
   const [areaId, setAreaId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [files, setFiles] = useState<File[]>([]);
 
   // Elegir persona: al reasignar (cualquier área) o al aceptar un envío a otra área.
   const fixedArea = action === "accept" && p?.kind === "reassign" ? (p.data.area_id ?? null) : null;
@@ -46,7 +42,7 @@ export function ActionModal({ ticket, action, onClose }: Props) {
   const area = fixedArea ?? (areaId ? Number(areaId) : null);
   const { data: people = [] } = usePeople(pickPerson ? area : null);
   const needsOutcome = action === "close" || (action === "accept" && p?.kind === "close");
-  const commentRequired = action === "reject" || action === "close" || action === "comment" || action === "reopen";
+  const commentRequired = action === "reject" || action === "close" || action === "reopen";
 
   const run = useTicketAction(async () => {
     const id = ticket!.id;
@@ -61,8 +57,6 @@ export function ActionModal({ ticket, action, onClose }: Props) {
         return ticketsApi.reassign(id, { user_id: uid!, comment: text });
       case "close":
         return ticketsApi.close(id, { outcome, comment: text });
-      case "comment":
-        return ticketsApi.comment(id, text, files);
       default:
         return ticketsApi.reopen(id, { comment: text });
     }
@@ -74,7 +68,6 @@ export function ActionModal({ ticket, action, onClose }: Props) {
     setOutcome("resuelto");
     setAreaId(ticket ? String(ticket.area_id) : null);
     setUserId(null);
-    setFiles([]);
     run.reset();
   }, [opened, action, ticket?.id]);
 
@@ -149,7 +142,6 @@ export function ActionModal({ ticket, action, onClose }: Props) {
             onChange={(e) => setComment(e.currentTarget.value)}
             data-autofocus
           />
-          {action === "comment" && <FilesField value={files} onChange={setFiles} />}
           {run.error && <Alert color="red" variant="light">{run.error.message}</Alert>}
           <Group justify="flex-end">
             <Button variant="default" onClick={onClose}>
@@ -159,7 +151,7 @@ export function ActionModal({ ticket, action, onClose }: Props) {
               type="submit"
               color={action === "reject" ? "red" : undefined}
               loading={run.isPending}
-              disabled={(pickPerson && !userId) || (commentRequired && !comment.trim()) || !filesOk(files)}
+              disabled={(pickPerson && !userId) || (commentRequired && !comment.trim())}
             >
               {TITLES[action].split(" ")[0]}
             </Button>

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/shared/ui";
 import { DueLabel, ManagerFlag, PriorityBadge, StatusBadge } from "../components/Badges";
 import { ProposalDrawer } from "../components/ProposalDrawer";
+import { useTrackingName } from "../components/TrackingSelect";
 import { useTickets } from "../hooks";
 import { PROPOSAL_LABELS, type ProposalKind, type Ticket } from "../types";
 
@@ -14,6 +15,7 @@ export function MyTicketsPage() {
   const navigate = useNavigate();
   const [status, setStatus] = useState("abiertos");
   const [proposal, setProposal] = useState<{ ticket: Ticket; kind: ProposalKind } | null>(null);
+  const trackingName = useTrackingName();
   const { data: tickets = [], isLoading } = useTickets({ status });
 
   return (
@@ -46,6 +48,11 @@ export function MyTicketsPage() {
                 <Text fw={500}>{t.title}</Text>
                 <Group gap="md" wrap="wrap">
                   <StatusBadge ticket={t} />
+                  {t.status_id && (
+                    <Text size="sm" c="dimmed">
+                      {trackingName(t.status_id)}
+                    </Text>
+                  )}
                   <DueLabel ticket={t} />
                   <ManagerFlag ticket={t} />
                 </Group>

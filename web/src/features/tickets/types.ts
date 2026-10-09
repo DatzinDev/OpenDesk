@@ -7,11 +7,11 @@ export type Attachment = { id: number; event_id: number; filename: string; conte
 
 export type TicketEvent = {
   id: number;
-  kind: ProposalKind | "created" | "assigned" | "comment" | "closed" | "reopened" | "needs_manager";
+  kind: ProposalKind | "created" | "assigned" | "status" | "closed" | "reopened" | "needs_manager";
   actor_id: number | null;
   actor_name: string | null;
   comment: string;
-  data: { due_at?: string; user_id?: number; area_id?: number; outcome?: Outcome; from?: number; to?: number; reason?: string };
+  data: { name?: string | null; due_at?: string; user_id?: number; area_id?: number; outcome?: Outcome; from?: number; to?: number; reason?: string };
   state: "pending" | "accepted" | "rejected" | "cancelled" | null;
   decided_by: number | null;
   decided_by_name: string | null;
@@ -37,6 +37,7 @@ export type Ticket = {
   due_at: string;
   committed: boolean;
   needs_manager: boolean;
+  status_id: number | null; // estatus de seguimiento del catálogo
   created_by: number;
   created_at: string;
   closed_at: string | null;
@@ -57,6 +58,7 @@ export type TicketInput = {
 
 export type ProposalInput = { kind: ProposalKind; comment: string; due_at?: string; user_id?: number; area_id?: number };
 export type DecisionInput = { comment: string; outcome?: Outcome; user_id?: number };
+export type TrackingStatus = { id: number; name: string; is_active: boolean };
 export type Person = { id: number; name: string; level: number | null };
 export type TicketFilters = { status?: string; area_id?: string; assignee_id?: string; q?: string };
 

@@ -33,6 +33,11 @@ INSERT INTO areas_holidays (day, name) VALUES
   ('2027-02-01', 'Día de la Constitución')
 ON CONFLICT (day) DO NOTHING;
 
+-- Catálogo de estatus de seguimiento.
+INSERT INTO tickets_statuses (name) VALUES
+  ('En diagnóstico'), ('Esperando al cliente'), ('Con proveedor'), ('En pruebas')
+ON CONFLICT (name) DO NOTHING;
+
 -- Tickets de ejemplo en distintos estados; solo se cargan si aún no hay tickets.
 DO $$
 DECLARE

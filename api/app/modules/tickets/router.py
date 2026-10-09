@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.modules import identity, users
 from app.modules.tickets import service
-from app.modules.tickets.schemas import (CloseIn, CommentIn, DecisionIn, Person, ProposalIn, ReassignIn, ReopenIn,
-                                         TicketDetail, TicketIn, TicketOut)
+from app.modules.tickets.schemas import (CloseIn, DecisionIn, Person, ProposalIn, ReassignIn, ReopenIn, SetStatusIn,
+                                         StatusIn, StatusOut, TicketDetail, TicketIn, TicketOut)
 from app.shared import storage
 
 router = APIRouter(prefix="/api", tags=["tickets"])
@@ -49,6 +49,21 @@ def list_tickets(area_id: int | None = None, assignee_id: int | None = None, sta
 async def create_ticket(data: str = Form(...), files: list[UploadFile] = File(default=[]),
                         actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
     return _call(service.create, db, actor, _form(TicketIn, data), await _uploads(files))
+
+
+@router.get("/ticket-statuses", response_model=list[StatusOut])
+def list_statuses(_: users.UserOut = Depends(me), db: Session = Depends(get_db)):
+    return service.list_statuses(db)
+
+
+@router.post("/ticket-statuses", response_model=StatusOut, status_code=201)
+def create_status(data: StatusIn, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
+    return _call(service.save_status, db, actor, data)
+
+
+@router.put("/ticket-statuses/{status_id}", response_model=StatusOut)
+def update_status(status_id: int, data: StatusIn, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
+    return _call(service.save_status, db, actor, data, status_id)
 
 
 @router.get("/tickets/peers", response_model=list[Person])
@@ -94,10 +109,9 @@ def close(ticket_id: int, data: CloseIn, actor: users.UserOut = Depends(me), db:
     return _call(service.close, db, actor, ticket_id, data)
 
 
-@router.post("/tickets/{ticket_id}/comments", response_model=TicketDetail, status_code=201)
-async def comment(ticket_id: int, data: str = Form(...), files: list[UploadFile] = File(default=[]),
-                  actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
-    return _call(service.comment, db, actor, ticket_id, _form(CommentIn, data), await _uploads(files))
+@router.put("/tickets/{ticket_id}/status", response_model=TicketDetail)
+def set_status(ticket_id: int, data: SetStatusIn, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
+    return _call(service.set_status, db, actor, ticket_id, data)
 
 
 @router.post("/tickets/{ticket_id}/reopen", response_model=TicketDetail)

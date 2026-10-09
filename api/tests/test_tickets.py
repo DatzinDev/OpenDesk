@@ -6,7 +6,7 @@ from app.core.db import now
 from app.modules.areas import service as areas
 from app.modules.areas.schemas import AreaIn
 from app.modules.tickets import service as t
-from app.modules.tickets.schemas import CloseIn, DecisionIn, ProposalIn, ReopenIn, TicketIn
+from app.modules.tickets.schemas import CloseIn, DecisionIn, ProposalIn, ReopenIn, SetStatusIn, StatusIn, TicketIn
 from app.modules.users import service as users
 from app.modules.users.schemas import UserCreate
 from app.shared import storage
@@ -76,3 +76,13 @@ def test_reopen_restarts_sla_and_usuario_sees_only_own(db, env):
     with pytest.raises(t.NotFound):
         t.detail(db, beto, tk.id)
     assert [x.id for x in t.list_for(db, beto)] == []
+
+
+def test_tracking_status_only_by_staff_and_logged(db, env):
+    root, ana, *_, new = env
+    st = t.save_status(db, root, StatusIn(name="Esperando al cliente"))
+    tk = new()
+    with pytest.raises(t.Forbidden):
+        t.set_status(db, ana, tk.id, SetStatusIn(status_id=st.id))
+    tk = t.set_status(db, root, tk.id, SetStatusIn(status_id=st.id))
+    assert tk.status_id == st.id and tk.events[-1].data == {"name": "Esperando al cliente"}

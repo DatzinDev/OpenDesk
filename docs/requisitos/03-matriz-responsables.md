@@ -19,7 +19,8 @@ por niveles fácil de leer.
   se mueve a esas personas a un nivel inferior.
 - RF-03.7 La sección Áreas se organiza en tres pestañas: **Áreas y personas** (alta de áreas y asignación de
   personas, editable en línea), **Matriz de escalamiento** (niveles por área, con el más alto arriba; cada
-  persona se arrastra al nivel deseado, o se mueve desde el menú de su etiqueta en pantallas táctiles) y **Días festivos**.
+  persona se arrastra al nivel deseado, o se mueve desde el menú de su etiqueta en pantallas táctiles) **Días festivos** y
+  **Estatus** (catálogo de estatus de seguimiento de tickets, ver 04).
 
 ## Criterios de aceptación
 - Área con 3 niveles; ticket de una persona de nivel 1 escala → se asigna a la persona del nivel 2 con menos

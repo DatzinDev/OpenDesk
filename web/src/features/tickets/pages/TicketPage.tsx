@@ -8,6 +8,7 @@ import { ActionModal, type StaffAction } from "../components/ActionModal";
 import { DueLabel, ManagerFlag, PriorityBadge, StatusBadge, dateFmt } from "../components/Badges";
 import { ProposalDrawer } from "../components/ProposalDrawer";
 import { TicketTimeline } from "../components/TicketTimeline";
+import { TrackingSelect, useTrackingName } from "../components/TrackingSelect";
 import { useTicket } from "../hooks";
 import { PROPOSAL_LABELS, type ProposalKind } from "../types";
 
@@ -31,6 +32,7 @@ export function TicketPage() {
   const { data: me } = useMe();
   const { data: t, isError } = useTicket(id);
   const { data: areas = [] } = useAreas();
+  const trackingName = useTrackingName();
   const [action, setAction] = useState<StaffAction | null>(null);
   const [kind, setKind] = useState<ProposalKind | null>(null);
   const staff = me?.role === "admin" || me?.role === "gestor";
@@ -84,6 +86,11 @@ export function TicketPage() {
           <Stack gap="lg">
             <Paper withBorder radius="lg" p="lg">
               <Stack gap="sm">
+                {staff ? (
+                  <TrackingSelect ticket={t} />
+                ) : (
+                  <Field label="Estatus de seguimiento">{trackingName(t.status_id) ?? "Sin estatus"}</Field>
+                )}
                 <Field label="Plazo vigente">
                   <DueLabel ticket={t} />
                 </Field>
@@ -129,9 +136,6 @@ export function TicketPage() {
                     Reabrir
                   </Button>
                 )}
-                <Button variant="default" onClick={() => setAction("comment")}>
-                  Comentar
-                </Button>
               </Stack>
             )}
 
