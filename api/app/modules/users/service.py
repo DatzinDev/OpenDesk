@@ -65,14 +65,22 @@ def update_user(db: Session, actor: UserOut, user_id: int, data: UserUpdate) -> 
     if user.id == actor.id and (data.is_active is False or data.role not in (None, user.role)):
         raise Forbidden("No puedes desactivar ni cambiar el rol de tu propia cuenta.")
 
+    if data.email:
+        data.email = data.email.lower()
+        other = repo.get_by_email(db, data.email)
+        if other and other.id != user.id:
+            raise Conflict("Ya existe un usuario con ese correo.")
+
     changes = {}
     for field, value in data.model_dump(exclude_none=True).items():
         if getattr(user, field) != value:
             changes[field] = [getattr(user, field), value]
             setattr(user, field, value)
     if changes:
+        if "email" in changes:
+            user.picture = None  # la foto pertenecía a la cuenta de Google anterior
         db.commit()
-        publish(UserUpdated(actor_id=actor.id, user_id=user.id, email=user.email, name=user.name, changes=changes))
+        publish(UserUpdated(actor_id=actor.id, user_id=user.id, email=user.email, name=user.name, role=user.role, changes=changes))
     return UserOut.model_validate(user)
 
 

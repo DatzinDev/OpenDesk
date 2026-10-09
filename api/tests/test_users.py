@@ -54,6 +54,16 @@ def test_deactivation_emails_and_blocks_login(db, root):
     assert identity.login(db, "u@acme.com", None, None) is None
 
 
+def test_email_change_moves_access_and_revokes_sessions(db, root):
+    u = make(db, root, "error@acme.com", "usuario")
+    token = identity.login(db, "error@acme.com", None, None)
+    service.update_user(db, root, u.id, UserUpdate(email="Correcto@acme.com"))
+    assert identity.resolve(db, token) is None
+    assert db.sent[-1] == ("correcto@acme.com", "Tu acceso a OpenDesk está listo")
+    assert identity.login(db, "error@acme.com", None, None) is None
+    assert identity.login(db, "correcto@acme.com", None, None)
+
+
 def test_unregistered_email_is_denied_and_audited(db, root):
     assert identity.login(db, "nadie@acme.com", None, None) is None
     assert db.scalar(select(AuditEntry).where(AuditEntry.action == "login.denied")).data["email"] == "nadie@acme.com"

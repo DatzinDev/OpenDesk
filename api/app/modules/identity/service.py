@@ -5,11 +5,11 @@ from datetime import timedelta
 from sqlalchemy import delete
 from sqlalchemy.orm import Session as DB
 
-from app.core.db import now
+from app.core.db import SessionLocal, now
 from app.modules import users
 from app.modules.identity.events import LoginDenied, LoginSucceeded
 from app.modules.identity.models import Session
-from app.shared.events import publish
+from app.shared.events import publish, subscribe
 
 SESSION_DAYS = 7
 
@@ -44,3 +44,15 @@ def resolve(db: DB, token: str) -> users.UserOut | None:
 def logout(db: DB, token: str) -> None:
     db.execute(delete(Session).where(Session.token_hash == _hash(token)))
     db.commit()
+
+
+def _revoke_on_access_change(e: users.UserUpdated) -> None:
+    """Un cambio de correo o una desactivación cierra las sesiones abiertas de esa cuenta."""
+    if "email" in e.changes or e.changes.get("is_active", [None, True])[1] is False:
+        with SessionLocal() as db:
+            db.execute(delete(Session).where(Session.user_id == e.user_id))
+            db.commit()
+
+
+def register() -> None:
+    subscribe(users.UserUpdated, _revoke_on_access_change)

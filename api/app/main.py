@@ -6,7 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.core import config
 from app.core.db import SessionLocal
-from app.modules import audit, notifications, users
+from app.modules import audit, identity, notifications, users
 from app.modules.identity.router import router as identity_router
 from app.modules.users.router import router as users_router
 
@@ -14,6 +14,7 @@ from app.modules.users.router import router as users_router
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     audit.register()
+    identity.register()
     notifications.register()
     with SessionLocal() as db:
         users.ensure_root(db, config.ADMIN_EMAIL)

@@ -7,7 +7,7 @@ os.environ["DATABASE_URL"] = f"sqlite:///{tempfile.mkdtemp()}/test.db"
 import pytest  # noqa: E402
 
 from app.core.db import Base, SessionLocal, engine  # noqa: E402
-from app.modules import audit, notifications  # noqa: E402
+from app.modules import audit, identity, notifications  # noqa: E402
 from app.modules.audit import models as _a  # noqa: E402,F401
 from app.modules.identity import models as _i  # noqa: E402,F401
 from app.shared import events, mailer  # noqa: E402
@@ -19,6 +19,7 @@ def db(monkeypatch):
     Base.metadata.create_all(engine)
     events._handlers.clear()
     audit.register()
+    identity.register()
     notifications.register()
     sent = []
     monkeypatch.setattr(mailer, "send", lambda to, subject, html: sent.append((to, subject)))

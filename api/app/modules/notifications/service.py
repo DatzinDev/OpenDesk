@@ -22,6 +22,8 @@ def on_user_created(e: users.UserCreated) -> None:
 
 
 def on_user_updated(e: users.UserUpdated) -> None:
+    if "email" in e.changes:
+        _mail(e.email, "Tu acceso a OpenDesk está listo", "account_created.html", name=e.name, role=e.role)
     if "is_active" in e.changes:
         active = e.changes["is_active"][1]
         subject = "Tu acceso a OpenDesk fue reactivado" if active else "Tu acceso a OpenDesk fue desactivado"

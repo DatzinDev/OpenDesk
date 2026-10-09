@@ -16,4 +16,5 @@ class UserUpdated:
     user_id: int
     email: str
     name: str
+    role: str
     changes: dict = field(default_factory=dict)  # campo -> [anterior, nuevo]
