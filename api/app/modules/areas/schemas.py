@@ -1,6 +1,6 @@
 from datetime import date, time
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class AreaIn(BaseModel):
@@ -8,26 +8,19 @@ class AreaIn(BaseModel):
     description: str = Field(default="", max_length=240)
     sla_hours: int = Field(default=24, ge=1, le=2000)
     always_open: bool = True
-    days: list[int] = Field(default_factory=lambda: [0, 1, 2, 3, 4])
-    start_time: time = time(9)
-    end_time: time = time(18)
+    week: list[tuple[time, time] | None] = Field(
+        default_factory=lambda: [(time(9), time(18))] * 5 + [None, None], min_length=7, max_length=7
+    )
     pause_on_holidays: bool = False
     is_active: bool = True
-
-    @field_validator("days")
-    @classmethod
-    def _days(cls, v: list[int]) -> list[int]:
-        if any(d not in range(7) for d in v):
-            raise ValueError("Días inválidos.")
-        return sorted(set(v))
 
     @model_validator(mode="after")
     def _window(self):
         if not self.always_open:
-            if not self.days:
+            if not any(self.week):
                 raise ValueError("Selecciona al menos un día de atención.")
-            if self.start_time >= self.end_time:
-                raise ValueError("La hora de inicio debe ser anterior a la hora de fin.")
+            if any(w and w[0] >= w[1] for w in self.week):
+                raise ValueError("En cada día, la hora de inicio debe ser anterior a la hora de fin.")
         return self
 
 
@@ -35,11 +28,6 @@ class AreaOut(AreaIn):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-
-    @field_validator("days", mode="before")
-    @classmethod
-    def _parse_days(cls, v):
-        return [int(d) for d in v.split(",") if d] if isinstance(v, str) else v
 
 
 class HolidayIn(BaseModel):

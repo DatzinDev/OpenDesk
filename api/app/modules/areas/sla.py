@@ -3,13 +3,13 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
+Window = tuple[time, time] | None  # horario de un día; None = no se atiende
+
 
 @dataclass(frozen=True)
 class Schedule:
     always_open: bool
-    days: frozenset[int]  # 0 = lunes ... 6 = domingo
-    start: time
-    end: time
+    week: tuple[Window, ...] = (None,) * 7  # índice 0 = lunes ... 6 = domingo
     holidays: frozenset[date] = frozenset()  # vacío si el área no pausa en festivos
 
 
@@ -19,14 +19,10 @@ def deadline(start: datetime, hours: float, schedule: Schedule, tz: ZoneInfo) ->
     remaining = timedelta(hours=hours)
     for _ in range(3700):  # ~10 años de días; evita ciclos infinitos con horarios vacíos
         day = cursor.date()
-        open_day = day not in schedule.holidays and (schedule.always_open or day.weekday() in schedule.days)
-        if open_day:
-            if schedule.always_open:
-                window_start = datetime.combine(day, time.min, tz)
-                window_end = window_start + timedelta(days=1)
-            else:
-                window_start = datetime.combine(day, schedule.start, tz)
-                window_end = datetime.combine(day, schedule.end, tz)
+        window = (time.min, None) if schedule.always_open else schedule.week[day.weekday()]
+        if window and day not in schedule.holidays:
+            window_start = datetime.combine(day, window[0], tz)
+            window_end = datetime.combine(day, window[1], tz) if window[1] else window_start + timedelta(days=1)
             begin = max(cursor, window_start)
             if begin < window_end:
                 available = window_end - begin

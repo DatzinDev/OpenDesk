@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
@@ -22,7 +22,7 @@ class NotFound(Exception):
 
 def _row(data: AreaIn) -> dict:
     d = data.model_dump()
-    d["days"] = ",".join(map(str, d["days"]))
+    d["week"] = [[w[0].strftime("%H:%M"), w[1].strftime("%H:%M")] if w else None for w in data.week]
     d["name"] = d["name"].strip()
     return d
 
@@ -84,9 +84,7 @@ def sla_deadline(db: Session, area_id: int, start: datetime) -> datetime:
     area = repo.get(db, area_id)
     schedule = sla.Schedule(
         always_open=area.always_open,
-        days=frozenset(int(d) for d in area.days.split(",") if d),
-        start=area.start_time,
-        end=area.end_time,
+        week=tuple((time.fromisoformat(w[0]), time.fromisoformat(w[1])) if w else None for w in area.week),
         holidays=frozenset(h.day for h in repo.holidays(db)) if area.pause_on_holidays else frozenset(),
     )
     return sla.deadline(start, area.sla_hours, schedule, ZoneInfo(config.APP_TIMEZONE))
