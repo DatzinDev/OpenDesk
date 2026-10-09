@@ -1,0 +1,65 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+.brandPanel {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 48px;
+  background: #0b1d3a;
+  color: #ffffff;
+}
+
+.pattern {
+  position: absolute;
+  right: -120px;
+  bottom: -140px;
+  width: 560px;
+  height: 560px;
+  opacity: 0.14;
+  pointer-events: none;
+}
+
+.statement {
+  position: relative;
+  max-width: 440px;
+  font-size: 34px;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.formPanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px clamp(24px, 6vw, 96px);
+}
+
+@media (max-width: 48em) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .brandPanel {
+    padding: 28px 20px;
+    gap: 40px;
+  }
+  .statement {
+    font-size: 26px;
+  }
+  .pattern {
+    width: 320px;
+    height: 320px;
+    right: -100px;
+    bottom: -120px;
+  }
+  .formPanel {
+    padding: 32px 20px 48px;
+  }
+}
