@@ -2,6 +2,35 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-08 — Fase 3: tickets y flujo
+
+**Cambios**
+- Módulo `tickets`:
+  - Alta de tickets con 7 campos y folio `OD-000123`.
+  - Propuestas del Usuario: actualización con fecha tentativa, escalar, reasignar a un compañero o a otra área, y cerrar.
+  - Decisiones del Gestor: aceptar o rechazar con comentario, más reasignar, cerrar, comentar y reabrir en cualquier momento.
+  - Línea de tiempo por ticket.
+- Escalamiento con la matriz de niveles: sube a la persona del siguiente nivel con menos tickets abiertos y, si no hay nivel superior, se marca "Requiere intervención del Gestor".
+- Adjuntos (imágenes y PDF, hasta 5 archivos de 10 MB por acción) en el nuevo servicio `storage` (SeaweedFS, compatible con S3). Se descargan solo a través del API.
+- Interfaz:
+  - "Bandeja" para Gestor y Admin, con las propuestas por decidir, filtros y búsqueda por folio.
+  - "Mis actividades" para el Usuario.
+  - Detalle del ticket con semáforo y línea de tiempo.
+  - La página de inicio lleva a la vista de trabajo de cada rol.
+- Auditoría de cada movimiento de ticket.
+- Datos de prueba: 6 tickets en distintos estados.
+
+**Decisiones**
+- La reasignación la solicita el Usuario y la aprueba el Gestor. Para otra área, el Gestor elige a la persona al aceptar.
+- Toda asignación reinicia el SLA con el horario del área destino y descarta la fecha compromiso.
+- Un ticket cerrado solo lo reabre el Gestor, con la última persona asignada.
+- Cualquier Gestor o Admin decide las propuestas.
+- SeaweedFS en lugar de MinIO, porque la edición comunitaria de MinIO ya no publica imágenes Docker.
+- "Escalado" deja de ser un estado y queda como evento de la línea de tiempo.
+
+**Pendientes**
+- Auto-escalamiento al vencer el SLA, avisos por correo y recordatorios (módulo 05). Por ahora, "SLA vencido" y "Compromiso vencido" solo se muestran.
+
 ## 2026-10-08 — Matriz de escalamiento por niveles
 
 **Cambios**
