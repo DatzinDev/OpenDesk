@@ -43,7 +43,7 @@ export function UserDrawer({ opened, onClose, user, actor }: Props) {
     e.preventDefault();
     if (!user) {
       create.mutate(
-        { email: email.trim(), name: name.trim(), role, area_id: role === "usuario" && areaId ? Number(areaId) : null },
+        { email: email.trim(), name: name.trim(), role, area_id: role === "usuario" && areaId ? areaId : null },
         {
           onSuccess: (u) => {
             notifications.show({ message: `Usuario creado. Enviamos las instrucciones de acceso a ${u.email}.` });
@@ -53,7 +53,7 @@ export function UserDrawer({ opened, onClose, user, actor }: Props) {
       );
     } else {
       update.mutate(
-        { id: user.id, data: { email: email.trim().toLowerCase(), name: name.trim(), role, is_active: active, ...(role === "usuario" && areaId ? { area_id: Number(areaId) } : {}) } },
+        { id: user.id, data: { email: email.trim().toLowerCase(), name: name.trim(), role, is_active: active, ...(role === "usuario" && areaId ? { area_id: areaId } : {}) } },
         {
           onSuccess: () => {
             notifications.show({ message: "Cambios guardados." });

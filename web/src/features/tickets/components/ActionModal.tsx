@@ -39,7 +39,7 @@ export function ActionModal({ ticket, action, onClose }: Props) {
   // Elegir persona: al reasignar (cualquier área) o al aceptar un envío a otra área.
   const fixedArea = action === "accept" && p?.kind === "reassign" ? (p.data.area_id ?? null) : null;
   const pickPerson = action === "reassign" || !!fixedArea;
-  const area = fixedArea ?? (areaId ? Number(areaId) : null);
+  const area = fixedArea ?? areaId;
   const { data: people = [] } = usePeople(pickPerson ? area : null);
   const needsOutcome = action === "close" || (action === "accept" && p?.kind === "close");
   const commentRequired = action === "reject" || action === "close" || action === "reopen";
@@ -47,7 +47,7 @@ export function ActionModal({ ticket, action, onClose }: Props) {
   const run = useTicketAction(async () => {
     const id = ticket!.id;
     const text = comment.trim();
-    const uid = userId ? Number(userId) : undefined;
+    const uid = userId ?? undefined;
     switch (action) {
       case "accept":
         return ticketsApi.accept(id, p!.id, { comment: text, outcome: needsOutcome ? outcome : undefined, user_id: uid });

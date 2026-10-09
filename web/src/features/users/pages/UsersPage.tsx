@@ -15,7 +15,7 @@ export function UsersPage() {
   const { data: me } = useMe();
   const { data: users = [], isLoading } = useUsers();
   const { data: areas = [] } = useAreas();
-  const areaName = (id: number | null) => areas.find((a) => a.id === id)?.name;
+  const areaName = (id: string | null) => areas.find((a) => a.id === id)?.name;
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("activos");
   const [drawer, setDrawer] = useState<{ open: boolean; user: User | null }>({ open: false, user: null });

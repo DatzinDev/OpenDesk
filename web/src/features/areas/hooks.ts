@@ -8,7 +8,7 @@ export const useHolidays = () => useQuery({ queryKey: ["holidays"], queryFn: are
 export function useSaveArea() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id?: number; data: AreaInput }) => (id ? areasApi.update(id, data) : areasApi.create(data)),
+    mutationFn: ({ id, data }: { id?: string; data: AreaInput }) => (id ? areasApi.update(id, data) : areasApi.create(data)),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["areas"] }),
   });
 }

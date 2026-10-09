@@ -47,8 +47,8 @@ const REASONS: Record<string, string> = {
 
 export function TicketTimeline({ ticket }: { ticket: TicketDetail }) {
   const { data: areas = [] } = useAreas();
-  const who = (id?: number | null) => (id ? (ticket.names[String(id)] ?? "una persona") : "");
-  const areaName = (id?: number) => areas.find((a) => a.id === id)?.name ?? "otra área";
+  const who = (id?: string | null) => (id ? (ticket.names[String(id)] ?? "una persona") : "");
+  const areaName = (id?: string) => areas.find((a) => a.id === id)?.name ?? "otra área";
 
   const title = (e: TicketEvent): string => {
     const by = e.actor_name ?? "Sistema";

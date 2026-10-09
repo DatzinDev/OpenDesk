@@ -16,7 +16,7 @@ export function AreasPage() {
   const [drawer, setDrawer] = useState<{ open: boolean; area: Area | null }>({ open: false, area: null });
   const [params, setParams] = useSearchParams();
   const tab = params.get("tab") ?? "areas";
-  const people = (id: number) => users.filter((u) => u.area_id === id && u.is_active).length;
+  const people = (id: string) => users.filter((u) => u.area_id === id && u.is_active).length;
 
   return (
     <>

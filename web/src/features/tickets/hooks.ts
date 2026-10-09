@@ -3,9 +3,9 @@ import { ticketsApi } from "./api";
 import type { TicketFilters } from "./types";
 
 export const useTickets = (f: TicketFilters = {}) => useQuery({ queryKey: ["tickets", f], queryFn: () => ticketsApi.list(f) });
-export const useTicket = (id: number) => useQuery({ queryKey: ["ticket", id], queryFn: () => ticketsApi.get(id) });
+export const useTicket = (id: string) => useQuery({ queryKey: ["ticket", id], queryFn: () => ticketsApi.get(id) });
 export const usePeers = (enabled: boolean) => useQuery({ queryKey: ["peers"], queryFn: ticketsApi.peers, enabled });
-export const usePeople = (areaId: number | null) =>
+export const usePeople = (areaId: string | null) =>
   useQuery({ queryKey: ["people", areaId], queryFn: () => ticketsApi.people(areaId!), enabled: !!areaId });
 
 export const useStatuses = () => useQuery({ queryKey: ["ticket-statuses"], queryFn: ticketsApi.statuses });

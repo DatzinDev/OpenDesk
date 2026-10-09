@@ -3,17 +3,17 @@ export type Status = "asignado" | "pendiente" | "seguimiento" | "cerrado";
 export type Outcome = "resuelto" | "no_resuelto";
 export type ProposalKind = "update" | "escalate" | "close" | "reassign";
 
-export type Attachment = { id: number; event_id: number; filename: string; content_type: string; size: number };
+export type Attachment = { id: string; event_id: string; filename: string; content_type: string; size: number };
 
 export type TicketEvent = {
-  id: number;
+  id: string;
   kind: ProposalKind | "created" | "assigned" | "status" | "closed" | "reopened" | "needs_manager" | "commitment_overdue";
-  actor_id: number | null;
+  actor_id: string | null;
   actor_name: string | null;
   comment: string;
-  data: { name?: string | null; due_at?: string; user_id?: number; area_id?: number; outcome?: Outcome; from?: number; to?: number; reason?: string };
+  data: { name?: string | null; due_at?: string; user_id?: string; area_id?: string; outcome?: Outcome; from?: string; to?: string; reason?: string };
   state: "pending" | "accepted" | "rejected" | "cancelled" | null;
-  decided_by: number | null;
+  decided_by: string | null;
   decided_by_name: string | null;
   decision_comment: string;
   created_at: string;
@@ -21,12 +21,12 @@ export type TicketEvent = {
 };
 
 export type Ticket = {
-  id: number;
+  id: string;
   folio: string;
   title: string;
   description: string;
-  area_id: number;
-  assignee_id: number;
+  area_id: string;
+  assignee_id: string;
   assignee_name: string | null;
   priority: Priority;
   client_name: string | null;
@@ -37,8 +37,8 @@ export type Ticket = {
   due_at: string;
   committed: boolean;
   needs_manager: boolean;
-  status_id: number | null; // estatus de seguimiento del catálogo
-  created_by: number;
+  status_id: string | null; // estatus de seguimiento del catálogo
+  created_by: string;
   created_at: string;
   closed_at: string | null;
   pending: TicketEvent | null;
@@ -49,17 +49,17 @@ export type TicketDetail = Ticket & { events: TicketEvent[]; names: Record<strin
 export type TicketInput = {
   title: string;
   description: string;
-  area_id: number;
-  assignee_id: number;
+  area_id: string;
+  assignee_id: string;
   priority: Priority;
   client_name: string | null;
   client_email: string | null;
 };
 
-export type ProposalInput = { kind: ProposalKind; comment: string; due_at?: string; user_id?: number; area_id?: number };
-export type DecisionInput = { comment: string; outcome?: Outcome; user_id?: number };
-export type TrackingStatus = { id: number; name: string; is_active: boolean };
-export type Person = { id: number; name: string; level: number | null };
+export type ProposalInput = { kind: ProposalKind; comment: string; due_at?: string; user_id?: string; area_id?: string };
+export type DecisionInput = { comment: string; outcome?: Outcome; user_id?: string };
+export type TrackingStatus = { id: string; name: string; is_active: boolean };
+export type Person = { id: string; name: string; level: number | null };
 export type TicketFilters = { status?: string; area_id?: string; assignee_id?: string; q?: string };
 
 export const STATUS_LABELS: Record<Status, string> = {

@@ -31,7 +31,7 @@ const minLocal = () => {
 
 export function ProposalDrawer({ ticket, kind, onClose }: Props) {
   const opened = !!ticket && !!kind;
-  const propose = useTicketAction(({ id, data, files }: { id: number; data: ProposalInput; files: File[] }) =>
+  const propose = useTicketAction(({ id, data, files }: { id: string; data: ProposalInput; files: File[] }) =>
     ticketsApi.propose(id, data, files),
   );
   const [comment, setComment] = useState("");
@@ -58,7 +58,7 @@ export function ProposalDrawer({ ticket, kind, onClose }: Props) {
     e.preventDefault();
     const data: ProposalInput = { kind, comment: comment.trim() };
     if (kind === "update") data.due_at = new Date(due).toISOString();
-    if (kind === "reassign" && choice) data[target === "peer" ? "user_id" : "area_id"] = Number(choice);
+    if (kind === "reassign" && choice) data[target === "peer" ? "user_id" : "area_id"] = choice;
     propose.mutate(
       { id: ticket.id, data, files },
       {

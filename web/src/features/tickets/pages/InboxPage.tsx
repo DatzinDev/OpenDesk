@@ -36,7 +36,7 @@ export function InboxPage() {
     q: q.trim() || undefined,
   });
   const trackingName = useTrackingName();
-  const areaName = (id: number) => areas.find((a) => a.id === id)?.name ?? "";
+  const areaName = (id: string) => areas.find((a) => a.id === id)?.name ?? "";
   const open = (t: Ticket) => navigate(`/tickets/${t.id}`);
 
   return (

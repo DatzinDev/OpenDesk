@@ -25,7 +25,7 @@ export function AreaAssignment() {
     if (!value || value === String(u.area_id)) return;
     const area = areas.find((a) => String(a.id) === value)?.name;
     update.mutate(
-      { id: u.id, data: { area_id: Number(value) } },
+      { id: u.id, data: { area_id: value } },
       {
         onSuccess: () =>
           notifications.show({

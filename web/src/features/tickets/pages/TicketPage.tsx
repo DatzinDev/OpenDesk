@@ -28,7 +28,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export function TicketPage() {
-  const id = Number(useParams().id);
+  const id = useParams().id ?? "";
   const { data: me } = useMe();
   const { data: t, isError } = useTicket(id);
   const { data: areas = [] } = useAreas();

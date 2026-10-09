@@ -1,5 +1,5 @@
 export type Area = {
-  id: number;
+  id: string;
   name: string;
   description: string;
   sla_hours: number;

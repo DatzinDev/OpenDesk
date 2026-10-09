@@ -22,7 +22,7 @@ export function TicketDrawer({ opened, onClose }: Props) {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [files, setFiles] = useState<File[]>([]);
-  const { data: people = [] } = usePeople(areaId ? Number(areaId) : null);
+  const { data: people = [] } = usePeople(areaId);
 
   useEffect(() => {
     if (!opened) return;
@@ -43,8 +43,8 @@ export function TicketDrawer({ opened, onClose }: Props) {
     const data: TicketInput = {
       title: title.trim(),
       description: description.trim(),
-      area_id: Number(areaId),
-      assignee_id: Number(assigneeId),
+      area_id: areaId,
+      assignee_id: assigneeId,
       priority,
       client_name: clientName.trim() || null,
       client_email: clientEmail.trim() || null,
