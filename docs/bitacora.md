@@ -6,11 +6,11 @@ Registro histórico del proyecto. Entradas en orden cronológico inverso; cada e
 
 **Cambios**
 - Módulo `areas`:
-  - Alta y edición de áreas con tiempo de primera respuesta, horario de atención (24/7 o días y franja horaria) y pausa opcional en festivos.
+  - Alta y edición de áreas con tiempo de primera respuesta, horario de atención (24/7 o un horario propio para cada día de la semana) y pausa opcional en festivos.
   - Calendario de días festivos.
   - Cálculo del vencimiento del SLA según el horario del área.
 - Usuarios: el rol Usuario requiere un área; nuevo responsable directo con validación de misma área y sin ciclos.
-- Interfaz: secciones Áreas (con festivos) y Responsables (matriz editable en línea por área), y columna Área en Usuarios.
+- Interfaz: sección Áreas con tres pestañas (áreas y personas, matriz de escalamiento y días festivos) y columna Área en Usuarios.
 - Auditoría de cambios en áreas y festivos.
 
 **Decisiones**
