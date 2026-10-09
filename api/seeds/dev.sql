@@ -38,74 +38,323 @@ INSERT INTO tickets_statuses (name) VALUES
   ('En diagnóstico'), ('Esperando al cliente'), ('Con proveedor'), ('En pruebas')
 ON CONFLICT (name) DO NOTHING;
 
--- Tickets de ejemplo en distintos estados; solo se cargan si aún no hay tickets.
+-- ---------------------------------------------------------------------------------------------------
+-- Tickets de ejemplo: cubren todos los estados con sus campos e historial. Solo se cargan si la tabla
+-- de tickets está vacía. Las fechas son relativas al momento de la carga. Sin adjuntos (requieren S3).
+-- ---------------------------------------------------------------------------------------------------
+
+-- Ayudantes temporales (viven solo durante esta sesión).
+CREATE OR REPLACE FUNCTION pg_temp.u(who text) RETURNS int LANGUAGE sql AS
+  $$ SELECT id FROM users_users WHERE email = who || '@opendesk.test' $$;
+CREATE OR REPLACE FUNCTION pg_temp.iso(ts timestamptz) RETURNS text LANGUAGE sql AS
+  $$ SELECT to_char(ts AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS+00:00') $$;
+
+-- Crea un ticket asignado a `who` (en su área), creado por Mariana Ruiz.
+CREATE OR REPLACE FUNCTION pg_temp.ticket(title text, descr text, who text, prio text, client text, email text,
+                                         st text, created timestamptz, due_from timestamptz, due_at timestamptz,
+                                         tracking text DEFAULT NULL) RETURNS int LANGUAGE sql AS $$
+  INSERT INTO tickets_tickets (title, description, area_id, assignee_id, priority, client_name, client_email, status,
+                               due_from, due_at, created_by, created_at, status_id)
+  SELECT title, descr, u.area_id, u.id, prio, client, email, st, due_from, due_at, pg_temp.u('mariana.ruiz'), created,
+         (SELECT id FROM tickets_statuses WHERE name = tracking)
+  FROM users_users u WHERE u.id = pg_temp.u(who)
+  RETURNING id $$;
+
+-- Agrega un evento a la línea de tiempo.
+CREATE OR REPLACE FUNCTION pg_temp.ev(t int, kind text, actor text, at timestamptz, comment text DEFAULT '',
+                                     data jsonb DEFAULT '{}', state text DEFAULT NULL, decider text DEFAULT NULL,
+                                     decision text DEFAULT '') RETURNS void LANGUAGE sql AS $$
+  INSERT INTO tickets_events (ticket_id, kind, actor_id, created_at, comment, data, state, decided_by, decision_comment)
+  VALUES (t, kind, pg_temp.u(actor), at, comment, data::json, state, pg_temp.u(decider), decision) $$;
+
+-- Asignación (creación o reasignación) con los datos que usa la aplicación.
+CREATE OR REPLACE FUNCTION pg_temp.moved(t int, actor text, at timestamptz, from_who text, to_who text, reason text)
+  RETURNS void LANGUAGE sql AS $$
+  SELECT pg_temp.ev(t, 'assigned', actor, at, '', jsonb_build_object('from', pg_temp.u(from_who), 'to', pg_temp.u(to_who),
+    'area_id', (SELECT area_id FROM users_users WHERE id = pg_temp.u(to_who)), 'reason', reason)) $$;
+
+-- Aviso en la campana.
+CREATE OR REPLACE FUNCTION pg_temp.notify(who text, t int, title text, body text, at timestamptz, seen boolean)
+  RETURNS void LANGUAGE sql AS $$
+  INSERT INTO notifications_notifications (user_id, ticket_id, title, body, created_at, read_at)
+  VALUES (pg_temp.u(who), t, title, body, at, CASE WHEN seen THEN at + interval '10 minutes' END) $$;
+
+-- Encuesta enviada (token ficticio: el enlace no es válido).
+CREATE OR REPLACE FUNCTION pg_temp.survey(t int, sent timestamptz, rating int, comment text, answered timestamptz)
+  RETURNS void LANGUAGE sql AS $$
+  INSERT INTO surveys_surveys (ticket_id, email, token_hash, sent_at, expires_at, rating, comment, answered_at)
+  SELECT t, client_email, md5(random()::text) || md5(random()::text), sent, sent + interval '7 days', rating,
+         coalesce(comment, ''), answered FROM tickets_tickets WHERE id = t $$;
+
 DO $$
 DECLARE
-  g int := (SELECT id FROM users_users WHERE email = 'mariana.ruiz@opendesk.test');
+  n timestamptz := now();
   t int;
-  u int;
+  f text;
 BEGIN
   IF EXISTS (SELECT 1 FROM tickets_tickets) THEN RETURN; END IF;
 
-  u := (SELECT id FROM users_users WHERE email = 'sofia.navarro@opendesk.test');
-  INSERT INTO tickets_tickets (title, description, area_id, assignee_id, priority, client_name, client_email, due_from, due_at, created_by)
-  VALUES ('No puedo iniciar sesión en el portal', 'El cliente indica que el portal rechaza su contraseña desde ayer.',
-          (SELECT area_id FROM users_users WHERE id = u), u, 'alta', 'Grupo Andrade', 'compras@andrade.test', now(), now() + interval '20 hours', g)
-  RETURNING id INTO t;
-  INSERT INTO tickets_events (ticket_id, kind, actor_id, data) VALUES (t, 'created', g, json_build_object('to', u));
+  -- ===== Asignado =====================================================================================
 
-  u := (SELECT id FROM users_users WHERE email = 'pablo.ibarra@opendesk.test');
-  INSERT INTO tickets_tickets (title, description, area_id, assignee_id, priority, status, due_from, due_at, created_by)
-  VALUES ('Error al exportar reportes en PDF', 'La exportación se queda cargando con reportes de más de 50 páginas.',
-          (SELECT area_id FROM users_users WHERE id = u), u, 'media', 'pendiente', now() - interval '6 hours', now() + interval '6 hours', g)
-  RETURNING id INTO t;
-  INSERT INTO tickets_events (ticket_id, kind, actor_id, data) VALUES (t, 'created', g, json_build_object('to', u));
-  INSERT INTO tickets_events (ticket_id, kind, actor_id, comment, data, state)
-  VALUES (t, 'update', u, 'Reproduje el error; el servicio de exportación agota la memoria. Aplicaré el ajuste en la siguiente ventana.',
-          json_build_object('due_at', to_char((now() + interval '2 days') AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS+00:00')), 'pending');
+  -- 1. Recién creado (semáforo verde).
+  t := pg_temp.ticket('No puedo iniciar sesión en el portal de clientes',
+    'El cliente indica que el portal rechaza su contraseña desde ayer. Ya intentó restablecerla sin éxito.',
+    'sofia.navarro', 'alta', 'Grupo Andrade', 'compras@andrade.test', 'asignado', n - interval '1 hour',
+    n - interval '1 hour', n + interval '23 hours');
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '1 hour', '', jsonb_build_object('to', pg_temp.u('sofia.navarro')));
+  PERFORM pg_temp.notify('sofia.navarro', t, 'Se te asignó el ticket OD-' || lpad(t::text, 6, '0'), 'No puedo iniciar sesión en el portal de clientes', n - interval '1 hour', false);
 
-  u := (SELECT id FROM users_users WHERE email = 'andrea.lozano@opendesk.test');
-  INSERT INTO tickets_tickets (title, description, area_id, assignee_id, priority, status, committed, client_name, due_from, due_at, created_by)
-  VALUES ('Cobro duplicado en la factura de septiembre', 'Aparecen dos cargos por el mismo servicio.',
-          (SELECT area_id FROM users_users WHERE id = u), u, 'alta', 'seguimiento', true, 'Laura Méndez', now() - interval '1 day', now() + interval '3 days', g)
-  RETURNING id INTO t;
-  INSERT INTO tickets_events (ticket_id, kind, actor_id, data) VALUES (t, 'created', g, json_build_object('to', u));
-  INSERT INTO tickets_events (ticket_id, kind, actor_id, comment, data, state, decided_by)
-  VALUES (t, 'update', u, 'Solicité la nota de crédito a contabilidad.',
-          json_build_object('due_at', to_char((now() + interval '3 days') AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS+00:00')), 'accepted', g);
+  -- 2. Al 85 % de su SLA (amarillo), con estatus de seguimiento y aviso emitido.
+  t := pg_temp.ticket('Lentitud al cargar el tablero de ventas',
+    'El tablero tarda más de un minuto en mostrar los indicadores del día, sobre todo por la mañana.',
+    'pablo.ibarra', 'media', 'Ferretería López', 'sistemas@ferrelopez.test', 'asignado', n - interval '20 hours',
+    n - interval '20 hours', n + interval '3 hours 30 minutes', 'En diagnóstico');
+  UPDATE tickets_tickets SET sla_warned = true WHERE id = t;
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '20 hours', '', jsonb_build_object('to', pg_temp.u('pablo.ibarra')));
+  PERFORM pg_temp.ev(t, 'status', 'mariana.ruiz', n - interval '18 hours', '', '{"name": "En diagnóstico"}');
+  f := 'OD-' || lpad(t::text, 6, '0');
+  PERFORM pg_temp.notify('pablo.ibarra', t, 'Se te asignó el ticket ' || f, 'Lentitud al cargar el tablero de ventas', n - interval '20 hours', true);
+  PERFORM pg_temp.notify('pablo.ibarra', t, 'Se consumió el 80 % del SLA de ' || f, 'Revisa el plazo en el detalle del ticket.', n - interval '1 hour', false);
 
-  u := (SELECT id FROM users_users WHERE email = 'diego.herrera@opendesk.test');
-  INSERT INTO tickets_tickets (title, description, area_id, assignee_id, priority, due_from, due_at, created_by)
-  VALUES ('Integración con el ERP sin sincronizar', 'Los pedidos no llegan al ERP desde el lunes.',
-          (SELECT area_id FROM users_users WHERE id = u), u, 'media', now() - interval '30 hours', now() - interval '2 hours', g)
-  RETURNING id INTO t;
-  INSERT INTO tickets_events (ticket_id, kind, actor_id, data) VALUES (t, 'created', g, json_build_object('to', u));
+  -- 3. Con una propuesta rechazada.
+  t := pg_temp.ticket('Error 500 al guardar pedidos con descuento',
+    'Al capturar un pedido con descuento mayor al 10 % el sistema muestra "Error 500" y no guarda.',
+    'sofia.navarro', 'alta', 'Comercial Rivera', 'ti@crivera.test', 'asignado', n - interval '10 hours',
+    n - interval '10 hours', n + interval '14 hours');
+  f := 'OD-' || lpad(t::text, 6, '0');
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '10 hours', '', jsonb_build_object('to', pg_temp.u('sofia.navarro')));
+  PERFORM pg_temp.ev(t, 'update', 'sofia.navarro', n - interval '6 hours',
+    'Revisaré la regla de descuentos con el equipo de desarrollo la próxima semana.',
+    jsonb_build_object('due_at', pg_temp.iso(n + interval '5 days')), 'rejected', 'mariana.ruiz',
+    'La fecha es muy lejana: el cliente no puede facturar. Propón una solución temporal para hoy.');
+  PERFORM pg_temp.notify('sofia.navarro', t, 'Tu propuesta de una actualización en ' || f || ' fue rechazada',
+    'La fecha es muy lejana: el cliente no puede facturar. Propón una solución temporal para hoy.', n - interval '5 hours', false);
 
-  u := (SELECT id FROM users_users WHERE email = 'camila.reyes@opendesk.test');
-  INSERT INTO tickets_tickets (title, description, area_id, assignee_id, priority, status, outcome, closed_at, client_email, due_from, due_at, created_by)
-  VALUES ('Alta de usuarios para nueva sucursal', 'Se requieren 12 accesos para la sucursal Monterrey.',
-          (SELECT area_id FROM users_users WHERE id = u), u, 'baja', 'cerrado', 'resuelto', now() - interval '1 day', 'ti@norte.test',
-          now() - interval '3 days', now() - interval '2 days', g)
-  RETURNING id INTO t;
-  INSERT INTO tickets_events (ticket_id, kind, actor_id, data) VALUES (t, 'created', g, json_build_object('to', u));
-  INSERT INTO tickets_events (ticket_id, kind, actor_id, comment, data, state, decided_by)
-  VALUES (t, 'close', u, 'Accesos creados y enviados al responsable de la sucursal.', '{"outcome": "resuelto"}', 'accepted', g);
+  -- 4. Escalado al nivel 2, con edición y estatus.
+  t := pg_temp.ticket('Integración con el ERP sin sincronizar',
+    'Los pedidos dejaron de llegar al ERP desde el lunes. El último pedido sincronizado es el 4512.',
+    'diego.herrera', 'alta', 'Distribuidora Sol', 'it@dsol.test', 'asignado', n - interval '30 hours',
+    n - interval '26 hours', n + interval '20 hours', 'Con proveedor');
+  f := 'OD-' || lpad(t::text, 6, '0');
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '30 hours', '', jsonb_build_object('to', pg_temp.u('pablo.ibarra')));
+  PERFORM pg_temp.ev(t, 'edited', 'mariana.ruiz', n - interval '29 hours', '', '{"changes": {"priority": ["media", "alta"]}}');
+  PERFORM pg_temp.ev(t, 'escalate', 'pablo.ibarra', n - interval '27 hours', 'El error está en el conector del ERP; requiere acceso de nivel 2.',
+    '{}', 'accepted', 'mariana.ruiz', 'De acuerdo, que lo revise Diego.');
+  PERFORM pg_temp.moved(t, 'mariana.ruiz', n - interval '26 hours', 'pablo.ibarra', 'diego.herrera', 'escalate');
+  PERFORM pg_temp.ev(t, 'status', 'jorge.medina', n - interval '20 hours', '', '{"name": "Con proveedor"}');
+  PERFORM pg_temp.notify('diego.herrera', t, 'Se te asignó el ticket ' || f, 'Integración con el ERP sin sincronizar', n - interval '26 hours', true);
+  PERFORM pg_temp.notify('pablo.ibarra', t, 'Tu propuesta de escalar en ' || f || ' fue aceptada', 'De acuerdo, que lo revise Diego.', n - interval '26 hours', true);
 
-  u := (SELECT id FROM users_users WHERE email = 'valeria.ortiz@opendesk.test');
-  INSERT INTO tickets_tickets (title, description, area_id, assignee_id, priority, status, due_from, due_at, created_by)
-  VALUES ('No se aplica el descuento por volumen', 'El sistema no reconoce el descuento al capturar el pedido.',
-          (SELECT area_id FROM users_users WHERE id = u), u, 'media', 'pendiente', now() - interval '2 hours', now() + interval '10 hours', g)
-  RETURNING id INTO t;
-  INSERT INTO tickets_events (ticket_id, kind, actor_id, data) VALUES (t, 'created', g, json_build_object('to', u));
-  INSERT INTO tickets_events (ticket_id, kind, actor_id, comment, data, state)
-  VALUES (t, 'reassign', u, 'Es una falla de la regla de precios en el sistema, no de facturación.',
-          json_build_object('area_id', (SELECT id FROM areas_areas WHERE name = 'Soporte técnico')), 'pending');
+  -- 5. Requiere intervención del Gestor (no hay nivel superior).
+  t := pg_temp.ticket('Caída intermitente del timbrado de facturas',
+    'El servicio de timbrado responde con tiempo de espera agotado en 3 de cada 10 facturas.',
+    'ricardo.fuentes', 'alta', 'Hotel Las Palmas', 'administracion@laspalmas.test', 'asignado', n - interval '15 hours',
+    n - interval '12 hours', n + interval '4 hours', 'Con proveedor');
+  UPDATE tickets_tickets SET needs_manager = true WHERE id = t;
+  f := 'OD-' || lpad(t::text, 6, '0');
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '15 hours', '', jsonb_build_object('to', pg_temp.u('andrea.lozano')));
+  PERFORM pg_temp.ev(t, 'escalate', 'andrea.lozano', n - interval '13 hours', 'Es una falla del proveedor de timbrado; necesito apoyo de nivel 2.',
+    '{}', 'accepted', 'jorge.medina');
+  PERFORM pg_temp.moved(t, 'jorge.medina', n - interval '12 hours', 'andrea.lozano', 'ricardo.fuentes', 'escalate');
+  PERFORM pg_temp.ev(t, 'status', 'jorge.medina', n - interval '11 hours', '', '{"name": "Con proveedor"}');
+  PERFORM pg_temp.ev(t, 'escalate', 'ricardo.fuentes', n - interval '3 hours', 'El proveedor no responde; se necesita escalar con la dirección.',
+    '{}', 'accepted', 'jorge.medina', 'Lo reviso con el proveedor.');
+  PERFORM pg_temp.ev(t, 'needs_manager', NULL, n - interval '2 hours');
+  PERFORM pg_temp.notify('mariana.ruiz', t, f || ' requiere intervención del Gestor', 'No hay un nivel superior con personas para escalarlo.', n - interval '2 hours', false);
+  PERFORM pg_temp.notify('jorge.medina', t, f || ' requiere intervención del Gestor', 'No hay un nivel superior con personas para escalarlo.', n - interval '2 hours', false);
+
+  -- 6. Reabierto después de cerrarse como Resuelto.
+  t := pg_temp.ticket('Facturas sin timbrar en la sucursal centro',
+    'Las facturas de la sucursal centro se generan sin sello fiscal.',
+    'valeria.ortiz', 'media', 'Farmacias del Bajío', NULL, 'asignado', n - interval '4 days',
+    n - interval '5 hours', n + interval '7 hours');
+  f := 'OD-' || lpad(t::text, 6, '0');
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '4 days', '', jsonb_build_object('to', pg_temp.u('valeria.ortiz')));
+  PERFORM pg_temp.ev(t, 'update', 'valeria.ortiz', n - interval '4 days' + interval '2 hours', 'Reinstalaré el certificado de sello digital en la sucursal.',
+    jsonb_build_object('due_at', pg_temp.iso(n - interval '3 days')), 'accepted', 'mariana.ruiz');
+  PERFORM pg_temp.ev(t, 'close', 'valeria.ortiz', n - interval '3 days', 'Certificado reinstalado; las facturas de prueba salieron timbradas.',
+    '{"outcome": "resuelto"}', 'accepted', 'mariana.ruiz');
+  PERFORM pg_temp.ev(t, 'reopened', 'mariana.ruiz', n - interval '5 hours', 'El cliente reporta que el problema regresó esta mañana.');
+  PERFORM pg_temp.moved(t, 'mariana.ruiz', n - interval '5 hours', 'valeria.ortiz', 'valeria.ortiz', 'reopen');
+  PERFORM pg_temp.notify('valeria.ortiz', t, 'Se te asignó el ticket ' || f, 'Facturas sin timbrar en la sucursal centro', n - interval '5 hours', false);
+
+  -- 7. SLA vencido hace un minuto: el worker lo escala automáticamente al siguiente nivel.
+  t := pg_temp.ticket('Pantalla en blanco al abrir reportes',
+    'Desde la actualización de ayer, la sección de reportes muestra una pantalla en blanco.',
+    'camila.reyes', 'alta', 'Grupo Aurora', 'direccion@aurora.test', 'asignado', n - interval '4 hours 1 minute',
+    n - interval '4 hours 1 minute', n - interval '1 minute');
+  UPDATE tickets_tickets SET sla_warned = true WHERE id = t;
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '4 hours 1 minute', '', jsonb_build_object('to', pg_temp.u('camila.reyes')));
+
+  -- ===== Pendiente de aprobación (una propuesta de cada tipo) ========================================
+
+  -- 8. Actualización con fecha tentativa.
+  t := pg_temp.ticket('Error al exportar reportes en PDF',
+    'La exportación se queda cargando con reportes de más de 50 páginas.',
+    'pablo.ibarra', 'media', 'Constructora Delta', 'compras@delta.test', 'pendiente', n - interval '8 hours',
+    n - interval '8 hours', n + interval '15 hours', 'En diagnóstico');
+  f := 'OD-' || lpad(t::text, 6, '0');
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '8 hours', '', jsonb_build_object('to', pg_temp.u('pablo.ibarra')));
+  PERFORM pg_temp.ev(t, 'status', 'mariana.ruiz', n - interval '7 hours', '', '{"name": "En diagnóstico"}');
+  PERFORM pg_temp.ev(t, 'update', 'pablo.ibarra', n - interval '1 hour',
+    'Reproduje el error: el servicio de exportación agota la memoria. Aplicaré el ajuste en la ventana de mantenimiento.',
+    jsonb_build_object('due_at', pg_temp.iso(n + interval '2 days')), 'pending');
+  PERFORM pg_temp.notify('mariana.ruiz', t, 'Pablo Ibarra propone una actualización en ' || f, 'Error al exportar reportes en PDF', n - interval '1 hour', false);
+  PERFORM pg_temp.notify('jorge.medina', t, 'Pablo Ibarra propone una actualización en ' || f, 'Error al exportar reportes en PDF', n - interval '1 hour', false);
+
+  -- 9. Escalar.
+  t := pg_temp.ticket('Bloqueo de cuentas tras cambio de contraseña',
+    'Cinco usuarios quedaron bloqueados después del cambio obligatorio de contraseña.',
+    'sofia.navarro', 'alta', 'Colegio Montessori Norte', 'sistemas@montessori.test', 'pendiente', n - interval '5 hours',
+    n - interval '5 hours', n + interval '19 hours');
+  f := 'OD-' || lpad(t::text, 6, '0');
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '5 hours', '', jsonb_build_object('to', pg_temp.u('sofia.navarro')));
+  PERFORM pg_temp.ev(t, 'escalate', 'sofia.navarro', n - interval '30 minutes', 'Requiere permisos de administrador del directorio.', '{}', 'pending');
+  PERFORM pg_temp.notify('mariana.ruiz', t, 'Sofía Navarro propone escalar en ' || f, 'Bloqueo de cuentas tras cambio de contraseña', n - interval '30 minutes', false);
+
+  -- 10. Reasignar a un compañero.
+  t := pg_temp.ticket('Configuración de impresoras en sucursal sur',
+    'Dos impresoras nuevas no aparecen en los equipos de la sucursal sur.',
+    'pablo.ibarra', 'baja', 'Papelería Central', 'compras@papeleriacentral.test', 'pendiente', n - interval '3 hours',
+    n - interval '3 hours', n + interval '21 hours');
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '3 hours', '', jsonb_build_object('to', pg_temp.u('pablo.ibarra')));
+  PERFORM pg_temp.ev(t, 'reassign', 'pablo.ibarra', n - interval '1 hour', 'Sofía atiende la sucursal sur esta semana.',
+    jsonb_build_object('user_id', pg_temp.u('sofia.navarro')), 'pending');
+
+  -- 11. Reasignar a otra área.
+  t := pg_temp.ticket('No se aplica el descuento por volumen',
+    'El sistema no reconoce el descuento por volumen al capturar el pedido.',
+    'valeria.ortiz', 'media', 'Abarrotes Don Pepe', 'pedidos@donpepe.test', 'pendiente', n - interval '2 hours',
+    n - interval '2 hours', n + interval '10 hours');
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '2 hours', '', jsonb_build_object('to', pg_temp.u('valeria.ortiz')));
+  PERFORM pg_temp.ev(t, 'reassign', 'valeria.ortiz', n - interval '40 minutes', 'Es una falla de la regla de precios en el sistema, no de facturación.',
+    jsonb_build_object('area_id', (SELECT id FROM areas_areas WHERE name = 'Soporte técnico')), 'pending');
+
+  -- 12. Cerrar (tenía compromiso vigente).
+  t := pg_temp.ticket('Usuarios duplicados en el catálogo',
+    'El catálogo de usuarios muestra registros duplicados con el mismo correo.',
+    'diego.herrera', 'media', 'Laboratorios Vida', 'ti@labvida.test', 'pendiente', n - interval '2 days',
+    n - interval '2 days' + interval '3 hours', n + interval '1 day', 'En pruebas');
+  UPDATE tickets_tickets SET committed = true WHERE id = t;
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '2 days', '', jsonb_build_object('to', pg_temp.u('diego.herrera')));
+  PERFORM pg_temp.ev(t, 'update', 'diego.herrera', n - interval '2 days' + interval '2 hours', 'Depuraré los duplicados y agregaré una validación de correo único.',
+    jsonb_build_object('due_at', pg_temp.iso(n + interval '1 day')), 'accepted', 'jorge.medina');
+  PERFORM pg_temp.ev(t, 'status', 'jorge.medina', n - interval '1 day', '', '{"name": "En pruebas"}');
+  PERFORM pg_temp.ev(t, 'close', 'diego.herrera', n - interval '2 hours', 'Depuré 37 usuarios duplicados y agregué la validación. El cliente confirmó.', '{}', 'pending');
+
+  -- ===== En seguimiento ================================================================================
+
+  -- 13. Compromiso a varios días.
+  t := pg_temp.ticket('Cobro duplicado en la factura de septiembre',
+    'Aparecen dos cargos por el mismo servicio en la factura de septiembre.',
+    'andrea.lozano', 'alta', 'Laura Méndez', 'laura.mendez@correo.test', 'seguimiento', n - interval '1 day',
+    n - interval '20 hours', n + interval '3 days', 'Esperando al cliente');
+  UPDATE tickets_tickets SET committed = true WHERE id = t;
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '1 day', '', jsonb_build_object('to', pg_temp.u('andrea.lozano')));
+  PERFORM pg_temp.ev(t, 'update', 'andrea.lozano', n - interval '22 hours', 'Solicité la nota de crédito a contabilidad; falta la confirmación del cliente.',
+    jsonb_build_object('due_at', pg_temp.iso(n + interval '3 days')), 'accepted', 'mariana.ruiz');
+  PERFORM pg_temp.ev(t, 'status', 'mariana.ruiz', n - interval '20 hours', '', '{"name": "Esperando al cliente"}');
+
+  -- 14. Compromiso a menos de 24 h (recordatorio enviado).
+  t := pg_temp.ticket('Actualización de datos fiscales del cliente',
+    'El cliente cambió de domicilio fiscal y necesita sus facturas con los datos nuevos.',
+    'ricardo.fuentes', 'media', 'Transportes Medina', 'facturas@tmedina.test', 'seguimiento', n - interval '3 days',
+    n - interval '2 days', n + interval '10 hours');
+  UPDATE tickets_tickets SET committed = true, reminded = true WHERE id = t;
+  f := 'OD-' || lpad(t::text, 6, '0');
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '3 days', '', jsonb_build_object('to', pg_temp.u('ricardo.fuentes')));
+  PERFORM pg_temp.ev(t, 'update', 'ricardo.fuentes', n - interval '2 days' - interval '1 hour', 'Actualizaré el padrón y reexpediré las facturas del mes.',
+    jsonb_build_object('due_at', pg_temp.iso(n + interval '10 hours')), 'accepted', 'jorge.medina');
+  PERFORM pg_temp.notify('ricardo.fuentes', t, 'Tu fecha compromiso de ' || f || ' vence pronto', 'Actualización de datos fiscales del cliente', n - interval '14 hours', false);
+
+  -- 15. Compromiso vencido, tras dos escalamientos.
+  t := pg_temp.ticket('Migración de buzones de correo',
+    'Migrar 40 buzones al nuevo proveedor de correo sin perder el historial.',
+    'laura.campos', 'alta', 'Despacho Herrera y Asociados', 'admin@herreraasoc.test', 'seguimiento', n - interval '5 days',
+    n - interval '3 days', n - interval '3 hours', 'Con proveedor');
+  UPDATE tickets_tickets SET committed = true, reminded = true, overdue_notified = true WHERE id = t;
+  f := 'OD-' || lpad(t::text, 6, '0');
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '5 days', '', jsonb_build_object('to', pg_temp.u('sofia.navarro')));
+  PERFORM pg_temp.ev(t, 'escalate', 'sofia.navarro', n - interval '5 days' + interval '3 hours', 'Requiere acceso a la consola del proveedor.', '{}', 'accepted', 'mariana.ruiz');
+  PERFORM pg_temp.moved(t, 'mariana.ruiz', n - interval '5 days' + interval '3 hours', 'sofia.navarro', 'diego.herrera', 'escalate');
+  PERFORM pg_temp.ev(t, 'escalate', 'diego.herrera', n - interval '4 days', 'Hace falta una decisión de arquitectura sobre los dominios.', '{}', 'accepted', 'mariana.ruiz');
+  PERFORM pg_temp.moved(t, 'mariana.ruiz', n - interval '4 days', 'diego.herrera', 'laura.campos', 'escalate');
+  PERFORM pg_temp.ev(t, 'update', 'laura.campos', n - interval '3 days' - interval '1 hour', 'Migraré por lotes de 10 buzones durante las noches.',
+    jsonb_build_object('due_at', pg_temp.iso(n - interval '3 hours')), 'accepted', 'mariana.ruiz');
+  PERFORM pg_temp.ev(t, 'status', 'mariana.ruiz', n - interval '2 days', '', '{"name": "Con proveedor"}');
+  PERFORM pg_temp.ev(t, 'commitment_overdue', NULL, n - interval '2 hours');
+  PERFORM pg_temp.notify('laura.campos', t, 'Venció la fecha compromiso de ' || f, 'Propón una nueva actualización o el cierre.', n - interval '2 hours', false);
+  PERFORM pg_temp.notify('mariana.ruiz', t, 'Venció la fecha compromiso de ' || f, 'Propón una nueva actualización o el cierre.', n - interval '2 hours', false);
+  PERFORM pg_temp.notify('jorge.medina', t, 'Venció la fecha compromiso de ' || f, 'Propón una nueva actualización o el cierre.', n - interval '2 hours', true);
+
+  -- 16. Compromiso en Clientes clave.
+  t := pg_temp.ticket('Reporte mensual personalizado',
+    'El cliente solicita un reporte mensual con el desglose por sucursal.',
+    'hector.salinas', 'baja', 'Grupo Aurora', 'direccion@aurora.test', 'seguimiento', n - interval '1 day',
+    n - interval '20 hours', n + interval '2 days');
+  UPDATE tickets_tickets SET committed = true WHERE id = t;
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '1 day', '', jsonb_build_object('to', pg_temp.u('hector.salinas')));
+  PERFORM pg_temp.ev(t, 'update', 'hector.salinas', n - interval '21 hours', 'Prepararé la plantilla y la validaré con el cliente.',
+    jsonb_build_object('due_at', pg_temp.iso(n + interval '2 days')), 'accepted', 'jorge.medina', 'Perfecto, mantenme al tanto.');
+
+  -- ===== Cerrado =======================================================================================
+
+  -- 17. Resuelto, encuesta contestada con comentario.
+  t := pg_temp.ticket('Alta de usuarios para nueva sucursal', 'Se requieren 12 accesos para la sucursal Monterrey.',
+    'camila.reyes', 'baja', 'Grupo Norte', 'ti@norte.test', 'cerrado', n - interval '4 days',
+    n - interval '4 days', n - interval '3 days 20 hours');
+  UPDATE tickets_tickets SET outcome = 'resuelto', closed_at = n - interval '3 days' WHERE id = t;
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '4 days', '', jsonb_build_object('to', pg_temp.u('camila.reyes')));
+  PERFORM pg_temp.ev(t, 'close', 'camila.reyes', n - interval '3 days 2 hours', 'Accesos creados y enviados al responsable de la sucursal.',
+    '{"outcome": "resuelto"}', 'accepted', 'mariana.ruiz');
+  PERFORM pg_temp.survey(t, n - interval '3 days', 5, 'Muy rápidos y amables. Todo quedó listo el mismo día.', n - interval '2 days 22 hours');
+
+  -- 18. Resuelto, encuesta sin responder.
+  t := pg_temp.ticket('Restablecer acceso a la VPN', 'El cliente no puede conectarse a la VPN desde casa.',
+    'sofia.navarro', 'media', 'Clínica San Rafael', 'sistemas@sanrafael.test', 'cerrado', n - interval '2 days',
+    n - interval '2 days', n - interval '1 day');
+  UPDATE tickets_tickets SET outcome = 'resuelto', closed_at = n - interval '1 day' WHERE id = t;
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '2 days', '', jsonb_build_object('to', pg_temp.u('sofia.navarro')));
+  PERFORM pg_temp.ev(t, 'close', 'sofia.navarro', n - interval '1 day 1 hour', 'Regeneré el certificado del cliente VPN y probamos la conexión.',
+    '{"outcome": "resuelto"}', 'accepted', 'jorge.medina');
+  PERFORM pg_temp.survey(t, n - interval '1 day', NULL, NULL, NULL);
+
+  -- 19. Resuelto, encuesta vencida sin respuesta.
+  t := pg_temp.ticket('Instalación de certificado SSL', 'El sitio del cliente muestra "conexión no segura".',
+    'diego.herrera', 'media', 'Tienda Verde', 'web@tiendaverde.test', 'cerrado', n - interval '11 days',
+    n - interval '11 days', n - interval '10 days');
+  UPDATE tickets_tickets SET outcome = 'resuelto', closed_at = n - interval '10 days' WHERE id = t;
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '11 days', '', jsonb_build_object('to', pg_temp.u('diego.herrera')));
+  PERFORM pg_temp.ev(t, 'close', 'diego.herrera', n - interval '10 days 1 hour', 'Certificado instalado y renovación automática configurada.',
+    '{"outcome": "resuelto"}', 'accepted', 'mariana.ruiz');
+  PERFORM pg_temp.survey(t, n - interval '10 days', NULL, NULL, NULL);
+
+  -- 20. No resuelto.
+  t := pg_temp.ticket('Recuperar archivos borrados del servidor antiguo',
+    'El cliente necesita recuperar una carpeta borrada hace seis meses.',
+    'laura.campos', 'alta', 'Despacho Herrera y Asociados', 'admin@herreraasoc.test', 'cerrado', n - interval '6 days',
+    n - interval '6 days', n - interval '5 days');
+  UPDATE tickets_tickets SET outcome = 'no_resuelto', closed_at = n - interval '2 days' WHERE id = t;
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '6 days', '', jsonb_build_object('to', pg_temp.u('laura.campos')));
+  PERFORM pg_temp.ev(t, 'close', 'laura.campos', n - interval '2 days 3 hours', 'No existe respaldo de esa fecha; el servidor se formateó en marzo.',
+    '{"outcome": "no_resuelto"}', 'accepted', 'mariana.ruiz', 'Se documenta como no resuelto y se informa al cliente.');
+
+  -- 21. Cerrado directamente por el Gestor.
+  t := pg_temp.ticket('Solicitud duplicada de alta de proveedor', 'Alta del proveedor "Insumos del Norte" en el sistema.',
+    'andrea.lozano', 'baja', NULL, NULL, 'cerrado', n - interval '3 days',
+    n - interval '3 days', n - interval '2 days');
+  UPDATE tickets_tickets SET outcome = 'no_resuelto', closed_at = n - interval '3 days' + interval '1 hour' WHERE id = t;
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '3 days', '', jsonb_build_object('to', pg_temp.u('andrea.lozano')));
+  PERFORM pg_temp.ev(t, 'closed', 'mariana.ruiz', n - interval '3 days' + interval '1 hour', 'Solicitud duplicada; se atiende en otro ticket.',
+    '{"outcome": "no_resuelto"}');
+
+  -- 22. Resuelto, encuesta contestada sin comentario.
+  t := pg_temp.ticket('Ajuste de horario de facturación', 'Cambiar el corte diario de facturación a las 20:00.',
+    'ricardo.fuentes', 'baja', 'Panadería La Espiga', 'contacto@laespiga.test', 'cerrado', n - interval '7 days',
+    n - interval '7 days', n - interval '6 days');
+  UPDATE tickets_tickets SET outcome = 'resuelto', closed_at = n - interval '6 days' WHERE id = t;
+  PERFORM pg_temp.ev(t, 'created', 'mariana.ruiz', n - interval '7 days', '', jsonb_build_object('to', pg_temp.u('ricardo.fuentes')));
+  PERFORM pg_temp.ev(t, 'close', 'ricardo.fuentes', n - interval '6 days 2 hours', 'Corte ajustado a las 20:00 y probado con el cierre de ayer.',
+    '{"outcome": "resuelto"}', 'accepted', 'jorge.medina');
+  PERFORM pg_temp.survey(t, n - interval '6 days', 3, NULL, n - interval '5 days');
 END $$;
-
--- Encuesta contestada para el ticket cerrado de ejemplo (token ficticio: no hay enlace válido).
-INSERT INTO surveys_surveys (ticket_id, email, token_hash, sent_at, expires_at, rating, comment, answered_at)
-SELECT t.id, t.client_email, md5(random()::text) || md5(random()::text), t.closed_at, t.closed_at + interval '7 days',
-       4, 'Rápidos y amables; tardaron un poco en confirmar los accesos.', t.closed_at + interval '3 hours'
-FROM tickets_tickets t
-WHERE t.title = 'Alta de usuarios para nueva sucursal'
-  AND NOT EXISTS (SELECT 1 FROM surveys_surveys s WHERE s.ticket_id = t.id);
