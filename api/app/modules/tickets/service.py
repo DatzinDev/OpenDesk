@@ -13,7 +13,8 @@ from app.modules.tickets import repository as repo
 from app.modules.tickets.events import TicketChanged
 from app.modules.tickets.models import Attachment, Event, Ticket, TrackingStatus
 from app.modules.tickets.schemas import (AttachmentOut, CloseIn, DecisionIn, EventOut, Person, ProposalIn, ReassignIn, ReopenIn,
-                                         SetStatusIn, StatusIn, StatusOut, TicketDetail, TicketIn, TicketOut)
+                                         SetStatusIn, StatusIn, StatusOut, TicketDetail, TicketIn, TicketOut,
+                                         TicketUpdate)
 from app.shared import storage
 from app.shared.events import publish
 
@@ -297,6 +298,35 @@ def create(db: Session, actor: users.UserOut, data: TicketIn, files: list[Upload
     _event(db, t, "created", actor.id, data={"to": user.id}, files=files)
     _queue(db, t, "assigned", actor.id, {"to": user.id, "area_id": user.area_id, "reason": "created"})
     return _done(db, actor.id, t, "created")
+
+
+EDITABLE = ("title", "description", "priority", "client_name", "client_email")
+
+
+def update(db: Session, actor: users.UserOut, ticket_id: UUID, data: TicketUpdate) -> TicketDetail:
+    """Gestor, Admin o el Usuario asignado corrigen datos descriptivos de un ticket abierto."""
+    t = _visible(db, actor, ticket_id)
+    if not _staff(actor) and t.assignee_id != actor.id:
+        raise Forbidden
+    _open(t)
+    changes = {}
+    for field in EDITABLE:
+        if field not in data.model_fields_set:
+            continue
+        value = getattr(data, field)
+        value = value.strip() or None if isinstance(value, str) else value
+        if field == "client_email" and value:
+            value = value.lower()
+        if field in ("title", "description", "priority") and not value:
+            raise Conflict("El título, la descripción y la prioridad son obligatorios.")
+        if getattr(t, field) != value:
+            # La descripción puede ser larga: el historial registra que cambió, sin copiar el texto.
+            changes[field] = None if field == "description" else [getattr(t, field), value]
+            setattr(t, field, value)
+    if not changes:
+        return _detail(db, t)
+    _event(db, t, "edited", actor.id, data={"changes": changes})
+    return _done(db, actor.id, t, "edited", {"changes": changes})
 
 
 def propose(db: Session, actor: users.UserOut, ticket_id: UUID, data: ProposalIn, files: list[Upload] = ()) -> TicketDetail:

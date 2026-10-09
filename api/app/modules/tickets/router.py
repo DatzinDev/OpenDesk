@@ -10,7 +10,7 @@ from app.core.db import get_db
 from app.modules import identity, users
 from app.modules.tickets import service
 from app.modules.tickets.schemas import (CloseIn, DecisionIn, Person, ProposalIn, ReassignIn, ReopenIn, SetStatusIn,
-                                         StatusIn, StatusOut, TicketDetail, TicketIn, TicketOut)
+                                         StatusIn, StatusOut, TicketDetail, TicketIn, TicketOut, TicketUpdate)
 from app.shared import storage
 
 router = APIRouter(prefix="/api", tags=["tickets"])
@@ -80,6 +80,11 @@ def people(area_id: UUID, actor: users.UserOut = Depends(me), db: Session = Depe
 @router.get("/tickets/{ticket_id}", response_model=TicketDetail)
 def get_ticket(ticket_id: UUID, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
     return _call(service.detail, db, actor, ticket_id)
+
+
+@router.patch("/tickets/{ticket_id}", response_model=TicketDetail)
+def update_ticket(ticket_id: UUID, data: TicketUpdate, actor: users.UserOut = Depends(me), db: Session = Depends(get_db)):
+    return _call(service.update, db, actor, ticket_id, data)
 
 
 @router.post("/tickets/{ticket_id}/proposals", response_model=TicketDetail, status_code=201)

@@ -20,6 +20,15 @@ class TicketIn(BaseModel):
     client_email: EmailStr | None = None
 
 
+class TicketUpdate(BaseModel):
+    """Datos descriptivos editables; área y asignado cambian solo con reasignación."""
+    title: str | None = Field(default=None, min_length=1, max_length=160)
+    description: str | None = Field(default=None, min_length=1, max_length=10000)
+    priority: Priority | None = None
+    client_name: str | None = Field(default=None, max_length=120)
+    client_email: EmailStr | Literal[""] | None = None  # "" borra el correo
+
+
 class ProposalIn(BaseModel):
     kind: ProposalKind
     comment: str = Field(min_length=1, max_length=5000)

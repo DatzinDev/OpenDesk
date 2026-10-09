@@ -6,7 +6,8 @@ from app.core.db import now
 from app.modules.areas import service as areas
 from app.modules.areas.schemas import AreaIn
 from app.modules.tickets import service as t
-from app.modules.tickets.schemas import CloseIn, DecisionIn, ProposalIn, ReopenIn, SetStatusIn, StatusIn, TicketIn
+from app.modules.tickets.schemas import (CloseIn, DecisionIn, ProposalIn, ReopenIn, SetStatusIn, StatusIn, TicketIn,
+                                         TicketUpdate)
 from app.modules.users import service as users
 from app.modules.users.schemas import UserCreate
 from app.shared import storage
@@ -87,3 +88,18 @@ def test_tracking_status_only_by_staff_and_logged(db, env):
         t.set_status(db, ana, tk.id, SetStatusIn(status_id=st.id))
     tk = t.set_status(db, root, tk.id, SetStatusIn(status_id=st.id))
     assert tk.status_id == st.id and tk.events[-1].data == {"name": "Esperando al cliente"}
+
+
+def test_edit_by_assignee_or_staff_and_logged(db, env):
+    root, ana, beto, *_, new = env
+    tk = new()
+    with pytest.raises(t.NotFound):
+        t.update(db, beto, tk.id, TicketUpdate(title="Otro"))
+    tk = t.update(db, ana, tk.id, TicketUpdate(title="Falla de acceso", priority="alta", description="Nueva"))
+    assert tk.title == "Falla de acceso" and tk.events[-1].data["changes"] == {
+        "title": ["Falla", "Falla de acceso"], "priority": ["media", "alta"], "description": None}
+    tk = t.update(db, root, tk.id, TicketUpdate(client_email=""))
+    assert tk.client_email is None
+    t.close(db, root, tk.id, CloseIn(outcome="resuelto", comment="Hecho"))
+    with pytest.raises(t.Conflict, match="cerrado"):
+        t.update(db, root, tk.id, TicketUpdate(title="X"))
