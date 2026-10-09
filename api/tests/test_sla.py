@@ -1,4 +1,4 @@
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from app.modules.areas.sla import Schedule, deadline
@@ -30,3 +30,15 @@ def test_saturday_with_own_hours():
     week = (NINE_SIX,) * 5 + ((time(9), time(14)), None)
     # viernes 15:00 -> 3 h viernes + 5 h sábado (9 a 14) + 4 h lunes = lunes 13:00
     assert deadline(FRI_15, 12, Schedule(False, week), TZ) == datetime(2026, 10, 12, 13, tzinfo=TZ)
+
+
+def test_elapsed_is_inverse_of_deadline():
+    from app.modules.areas.sla import elapsed
+    from datetime import date as _d
+    tz = ZoneInfo("America/Mexico_City")
+    lv = Schedule(False, tuple([(time(9), time(18))] * 5 + [None, None]))
+    fri = datetime(2026, 10, 9, 15, 0, tzinfo=tz)
+    assert elapsed(fri, datetime(2026, 10, 12, 18, 0, tzinfo=tz), lv, tz) == 12  # 3 h el viernes + 9 h el lunes
+    festivo = Schedule(False, lv.week, frozenset({_d(2026, 10, 12)}))
+    assert elapsed(fri, datetime(2026, 10, 13, 18, 0, tzinfo=tz), festivo, tz) == 12
+    assert elapsed(fri, fri + timedelta(hours=5), Schedule(True), tz) == 5

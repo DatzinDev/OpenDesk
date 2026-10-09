@@ -94,13 +94,35 @@ def remove_holiday(db: Session, actor_id: int, day: date) -> None:
     publish(HolidaysChanged(actor_id=actor_id, day=day.isoformat(), name=h.name, removed=True))
 
 
-def sla_deadline(db: Session, area_id: int, start: datetime) -> datetime:
-    """Vencimiento del SLA de primera respuesta para un ticket asignado en `start`."""
-    area = repo.get(db, area_id)
-    schedule = sla.Schedule(
+def _schedule(area, holidays: frozenset) -> sla.Schedule:
+    return sla.Schedule(
         always_open=area.always_open,
         week=tuple((time.fromisoformat(w[0]), time.fromisoformat(w[1])) if w else None for w in area.week),
-        holidays=frozenset(h.day for h in repo.holidays(db)) if area.pause_on_holidays else frozenset(),
+        holidays=holidays if area.pause_on_holidays else frozenset(),
     )
+
+
+def _holidays(db: Session) -> frozenset:
+    return frozenset(h.day for h in repo.holidays(db))
+
+
+def _tz(db: Session):
     from app.modules import settings  # importación diferida: settings no depende de áreas
-    return sla.deadline(start, area.sla_hours, schedule, settings.tz(db))
+    return settings.tz(db)
+
+
+def sla_deadline(db: Session, area_id: int, start: datetime) -> datetime:
+    """Vencimiento del SLA de primera respuesta para un ticket asignado en `start`."""
+    return sla.deadline(start, repo.get(db, area_id).sla_hours, _schedule(repo.get(db, area_id), _holidays(db)), _tz(db))
+
+
+def business_hours(db: Session, area_id: int, start: datetime, end: datetime) -> float:
+    """Horas hábiles del área entre dos momentos."""
+    return sla.elapsed(start, end, _schedule(repo.get(db, area_id), _holidays(db)), _tz(db))
+
+
+def business_clock(db: Session):
+    """Calculadora de horas hábiles para muchos tickets: lee horarios y festivos una sola vez."""
+    holidays, tz = _holidays(db), _tz(db)
+    schedules = {a.id: _schedule(a, holidays) for a in repo.list_(db)}
+    return lambda area_id, a, b: sla.elapsed(a, b, schedules[area_id], tz) if area_id in schedules else (b - a).total_seconds() / 3600

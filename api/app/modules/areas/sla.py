@@ -31,3 +31,22 @@ def deadline(start: datetime, hours: float, schedule: Schedule, tz: ZoneInfo) ->
                 remaining -= available
         cursor = datetime.combine(day + timedelta(days=1), time.min, tz)
     raise ValueError("El horario del área no tiene tiempo disponible.")
+
+
+def elapsed(start: datetime, end: datetime, schedule: Schedule, tz: ZoneInfo) -> float:
+    """Horas dentro del horario de atención entre `start` y `end` (inverso de `deadline`)."""
+    if end <= start:
+        return 0.0
+    cursor, end = start.astimezone(tz), end.astimezone(tz)
+    total = timedelta()
+    while cursor < end:
+        day = cursor.date()
+        window = (time.min, None) if schedule.always_open else schedule.week[day.weekday()]
+        if window and day not in schedule.holidays:
+            window_start = datetime.combine(day, window[0], tz)
+            window_end = datetime.combine(day, window[1], tz) if window[1] else window_start + timedelta(days=1)
+            begin, finish = max(cursor, window_start), min(end, window_end)
+            if begin < finish:
+                total += finish - begin
+        cursor = datetime.combine(day + timedelta(days=1), time.min, tz)
+    return total.total_seconds() / 3600
