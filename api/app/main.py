@@ -8,6 +8,7 @@ from app.core import config
 from app.core.db import SessionLocal
 from app.shared import storage
 from app.modules import audit, identity, notifications, surveys, users
+from app.modules.analytics.router import router as analytics_router
 from app.modules.areas.router import router as areas_router
 from app.modules.identity.router import router as identity_router
 from app.modules.notifications.router import router as notifications_router
@@ -50,3 +51,4 @@ app.include_router(areas_router)
 app.include_router(tickets_router)
 app.include_router(notifications_router)
 app.include_router(surveys_router)
+app.include_router(analytics_router)
