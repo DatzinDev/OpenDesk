@@ -6,6 +6,7 @@ import {
   IconCircleCheck,
   IconCircleDot,
   IconFileText,
+  IconPencil,
   IconPlus,
   IconRefresh,
   IconTag,
@@ -13,7 +14,7 @@ import {
   type Icon,
 } from "@tabler/icons-react";
 import { useAreas } from "@/features/areas";
-import { OUTCOME_LABELS, type TicketDetail, type TicketEvent } from "../types";
+import { OUTCOME_LABELS, PRIORITY_LABELS, type Priority, type TicketDetail, type TicketEvent } from "../types";
 import { dateFmt } from "./Badges";
 
 const ICONS: Partial<Record<string, Icon>> = {
@@ -24,6 +25,7 @@ const ICONS: Partial<Record<string, Icon>> = {
   reassign: IconArrowsExchange,
   assigned: IconArrowsExchange,
   status: IconTag,
+  edited: IconPencil,
   closed: IconCircleCheck,
   reopened: IconRefresh,
   needs_manager: IconAlertTriangle,
@@ -36,6 +38,17 @@ const STATE = {
   rejected: { label: "Rechazada", color: "red" },
   cancelled: { label: "Cancelada", color: "gray" },
 } as const;
+
+const FIELD_LABELS: Record<string, string> = {
+  title: "el título",
+  description: "la descripción",
+  priority: "la prioridad",
+  client_name: "el nombre del cliente",
+  client_email: "el correo del cliente",
+};
+
+const show = (field: string, v: string | null) =>
+  v ? (field === "priority" ? PRIORITY_LABELS[v as Priority] : `«${v}»`) : "vacío";
 
 const REASONS: Record<string, string> = {
   escalate: "Escalado a",
@@ -69,6 +82,12 @@ export function TicketTimeline({ ticket }: { ticket: TicketDetail }) {
         return `${REASONS[e.data.reason ?? "manual"]} ${who(e.data.to)}${e.data.reason === "reassign" || e.data.reason === "manual" ? ` (${areaName(e.data.area_id)})` : ""}`;
       case "status":
         return e.data.name ? `${by} cambió el estatus a «${e.data.name}»` : `${by} quitó el estatus de seguimiento`;
+      case "edited": {
+        const parts = Object.entries(e.data.changes ?? {}).map(([field, v]) =>
+          v ? `${FIELD_LABELS[field] ?? field} (${show(field, v[0])} → ${show(field, v[1])})` : (FIELD_LABELS[field] ?? field),
+        );
+        return `${by} editó ${parts.join(", ")}`;
+      }
       case "closed":
         return `${by} cerró el ticket como ${OUTCOME_LABELS[e.data.outcome!]}`;
       case "reopened":

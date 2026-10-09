@@ -1,5 +1,5 @@
 import { Anchor, Button, Grid, Group, Paper, Stack, Text, Title } from "@mantine/core";
-import { IconArrowLeft } from "@tabler/icons-react";
+import { IconArrowLeft, IconPencil } from "@tabler/icons-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAreas } from "@/features/areas";
@@ -7,6 +7,7 @@ import { useMe } from "@/features/auth";
 import { SurveyCard } from "@/features/surveys";
 import { ActionModal, type StaffAction } from "../components/ActionModal";
 import { DueLabel, ManagerFlag, PriorityBadge, StatusBadge, dateFmt } from "../components/Badges";
+import { EditTicketDrawer } from "../components/EditTicketDrawer";
 import { ProposalDrawer } from "../components/ProposalDrawer";
 import { TicketTimeline } from "../components/TicketTimeline";
 import { TrackingSelect, useTrackingName } from "../components/TrackingSelect";
@@ -36,6 +37,7 @@ export function TicketPage() {
   const trackingName = useTrackingName();
   const [action, setAction] = useState<StaffAction | null>(null);
   const [kind, setKind] = useState<ProposalKind | null>(null);
+  const [editing, setEditing] = useState(false);
   const staff = me?.role === "admin" || me?.role === "gestor";
   const back = staff ? "/bandeja" : "/mis-actividades";
 
@@ -60,6 +62,11 @@ export function TicketPage() {
           {t.title}
         </Title>
         <Group gap="sm">
+          {!closed && (staff || t.assignee_id === me.id) && (
+            <Button size="compact-sm" variant="default" leftSection={<IconPencil size={14} />} onClick={() => setEditing(true)}>
+              Editar
+            </Button>
+          )}
           <StatusBadge ticket={t} />
           <PriorityBadge priority={t.priority} />
           <ManagerFlag ticket={t} />
@@ -161,6 +168,7 @@ export function TicketPage() {
       </Grid>
 
       <ActionModal ticket={action ? t : null} action={action} onClose={() => setAction(null)} />
+      <EditTicketDrawer ticket={t} opened={editing} onClose={() => setEditing(false)} />
       <ProposalDrawer ticket={kind ? t : null} kind={kind} onClose={() => setKind(null)} />
     </Stack>
   );

@@ -7,11 +7,11 @@ export type Attachment = { id: string; event_id: string; filename: string; conte
 
 export type TicketEvent = {
   id: string;
-  kind: ProposalKind | "created" | "assigned" | "status" | "closed" | "reopened" | "needs_manager" | "commitment_overdue";
+  kind: ProposalKind | "created" | "assigned" | "status" | "edited" | "closed" | "reopened" | "needs_manager" | "commitment_overdue";
   actor_id: string | null;
   actor_name: string | null;
   comment: string;
-  data: { name?: string | null; due_at?: string; user_id?: string; area_id?: string; outcome?: Outcome; from?: string; to?: string; reason?: string };
+  data: { changes?: Record<string, [string | null, string | null] | null>; name?: string | null; due_at?: string; user_id?: string; area_id?: string; outcome?: Outcome; from?: string; to?: string; reason?: string };
   state: "pending" | "accepted" | "rejected" | "cancelled" | null;
   decided_by: string | null;
   decided_by_name: string | null;
@@ -54,6 +54,11 @@ export type TicketInput = {
   priority: Priority;
   client_name: string | null;
   client_email: string | null;
+};
+
+export type TicketUpdate = Partial<Pick<TicketInput, "title" | "description" | "priority">> & {
+  client_name?: string;
+  client_email?: string;
 };
 
 export type ProposalInput = { kind: ProposalKind; comment: string; due_at?: string; user_id?: string; area_id?: string };

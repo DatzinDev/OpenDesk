@@ -8,6 +8,7 @@ import type {
   TicketDetail,
   TicketFilters,
   TicketInput,
+  TicketUpdate,
   TrackingStatus,
 } from "./types";
 
@@ -26,6 +27,7 @@ export const ticketsApi = {
   reject: (id: string, eventId: string, data: DecisionInput) => post<TicketDetail>(`/tickets/${id}/proposals/${eventId}/reject`, data),
   reassign: (id: string, data: { user_id: string; comment: string }) => post<TicketDetail>(`/tickets/${id}/reassign`, data),
   close: (id: string, data: { outcome: Outcome; comment: string }) => post<TicketDetail>(`/tickets/${id}/close`, data),
+  update: (id: string, data: TicketUpdate) => http<TicketDetail>(`/tickets/${id}`, { method: "PATCH", body: json(data) }),
   setStatus: (id: string, status_id: string | null) =>
     http<TicketDetail>(`/tickets/${id}/status`, { method: "PUT", body: json({ status_id }) }),
   statuses: () => http<TrackingStatus[]>("/ticket-statuses"),
