@@ -39,6 +39,18 @@ services:
       storage:
         condition: service_started
 
+  worker:
+    # Revisa plazos cada minuto: aviso al 80 % del SLA, auto-escalamiento, recordatorios y compromisos vencidos.
+    build: ./api
+    command: python -m app.worker
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://opendesk:${POSTGRES_PASSWORD}@db/opendesk
+    volumes:
+      - ./api:/srv
+    depends_on:
+      - api
+
   web:
     image: node:22-alpine
     working_dir: /web
