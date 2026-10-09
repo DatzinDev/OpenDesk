@@ -1,21 +1,22 @@
-import { Alert, Button, Group, NumberInput, Paper, Select, Stack, Text, TextInput, Textarea, Title } from "@mantine/core";
+import { Alert, Button, Group, NumberInput, Paper, Select, Stack, Text, TextInput, Title } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconMailForward } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useMe } from "@/features/auth";
 import { PageHeader } from "@/shared/ui";
 import { settingsApi, type Functional, type Technical } from "../api";
+import { BrandingEditor } from "../components/BrandingEditor";
+import { Link } from "react-router-dom";
 
 const ZONES = (Intl as unknown as { supportedValuesOf?: (k: string) => string[] }).supportedValuesOf?.("timeZone") ?? ["America/Mexico_City"];
 
-function Section({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <Paper withBorder radius="lg" p="lg">
       <Stack gap="md">
         <div>
           <Title order={2} fz="md">{title}</Title>
-          <Text size="sm" c="dimmed">{description}</Text>
         </div>
         {children}
       </Stack>
@@ -39,19 +40,21 @@ export function SettingsPage() {
     mutationFn: settingsApi.save,
     onSuccess: (s) => {
       qc.setQueryData(["settings"], s);
+      qc.invalidateQueries({ queryKey: ["branding"] });
       notifications.show({ message: "Cambios guardados." });
     },
   });
   const test = useMutation({ mutationFn: settingsApi.testEmail });
   const admin = me?.role === "admin";
-  const preview = useMemo(() => fn?.survey_question.replace("{titulo}", "No puedo iniciar sesión"), [fn?.survey_question]);
   if (!fn || !tech) return null;
 
   return (
     <>
-      <PageHeader title="Configuración" description="Parámetros que aplican a toda la organización. Cada cambio queda en la auditoría." />
-      <Stack gap="lg" maw={720}>
-        <Section title="Operación" description="Ajustes del día a día, para Gestores y Administradores.">
+      <PageHeader title="Configuración" />
+      <Stack gap="lg">
+        {admin && <BrandingEditor />}
+        {admin && <Section title="Formularios"><Group><Button component={Link} to="/formularios/tickets" variant="default">Editar formulario de tickets</Button><Button component={Link} to="/formularios/encuesta" color="contrast">Editar encuesta de clientes</Button></Group></Section>}
+        <Section title="Operación">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -67,20 +70,16 @@ export function SettingsPage() {
                 <NumberInput label="Aviso de SLA por consumir" description="Porcentaje del plazo consumido." suffix=" %" min={50} max={95}
                   value={fn.sla_warning_pct} onChange={(v) => setFn({ ...fn, sla_warning_pct: Number(v) || 80 })} />
               </Group>
-              <Textarea label="Pregunta de la encuesta" description="Usa {titulo} donde deba ir el título de la solicitud." autosize minRows={2}
-                maxLength={300} value={fn.survey_question} onChange={(e) => setFn({ ...fn, survey_question: e.currentTarget.value })}
-                error={fn.survey_question.includes("{titulo}") ? undefined : "Incluye {titulo}."} />
-              <Text size="xs" c="dimmed">Vista previa: {preview}</Text>
               {save.error && <Alert color="red" variant="light">{save.error.message}</Alert>}
               <Group justify="flex-end">
-                <Button type="submit" loading={save.isPending} disabled={!fn.survey_question.includes("{titulo}")}>Guardar cambios</Button>
+                <Button type="submit" loading={save.isPending}>Guardar cambios</Button>
               </Group>
             </Stack>
           </form>
         </Section>
 
         {admin && (
-          <Section title="Técnicos" description="Solo el Administrador los puede cambiar.">
+          <Section title="Acceso y zona horaria">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
