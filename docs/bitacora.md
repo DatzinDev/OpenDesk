@@ -2,6 +2,11 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-09 — Versión 0.1.1
+
+- Se publica `v0.1.1` con el módulo 08 (auditoría y parámetros), los avisos instantáneos, las horas hábiles en la analítica, la paginación de la Bandeja, los respaldos y el logotipo. El detalle está en `CHANGELOG.md`.
+- Tank vuelve a `main` y sigue como demostración.
+
 ## 2026-10-09 — Logotipo de OpenDesk
 
 **Cambios**
