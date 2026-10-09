@@ -36,13 +36,7 @@ export function EscalationMatrix() {
     saveArea.mutate(
       { id, data: { ...data, levels } },
       {
-        onSuccess: () =>
-          notifications.show({
-            message:
-              levels < area.levels
-                ? `${area.name} ahora tiene ${levels} niveles. Quienes estaban arriba pasaron al nivel ${levels}.`
-                : `${area.name} ahora tiene ${levels} niveles.`,
-          }),
+        onSuccess: () => notifications.show({ message: `${area.name} ahora tiene ${levels} ${levels === 1 ? "nivel" : "niveles"}.` }),
         onError: (e) => notifications.show({ color: "pink", message: e.message }),
       },
     );
@@ -67,6 +61,7 @@ export function EscalationMatrix() {
         .map((area) => {
           const members = people.filter((u) => u.area_id === area.id);
           const levels = Array.from({ length: area.levels }, (_, i) => area.levels - i); // más alto arriba
+          const occupied = Math.max(1, ...members.map((u) => u.level ?? 1));
           return (
             <Paper key={area.id} radius="lg" withBorder p="md">
               <Group justify="space-between" mb="md" wrap="wrap">
@@ -82,7 +77,7 @@ export function EscalationMatrix() {
                   aria-label={`Número de niveles de ${area.name}`}
                   leftSection={<Text size="xs" c="dimmed" pl={8}>Niveles</Text>}
                   leftSectionWidth={64}
-                  min={1}
+                  min={occupied}
                   max={10}
                   w={140}
                   size="xs"

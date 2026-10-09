@@ -12,7 +12,7 @@ Registro histórico del proyecto. Entradas en orden cronológico inverso; cada e
 
 **Decisiones**
 - Al escalar, el ticket sube al siguiente nivel con personas y se asigna a quien tenga menos tickets abiertos.
-- Si un área reduce sus niveles, quienes quedan arriba pasan al nivel más alto disponible.
+- No se pueden reducir los niveles de un área por debajo del nivel más alto ocupado; primero se mueve a esas personas.
 
 ## 2026-10-08 — Fase 2: áreas, SLA y matriz de responsables
 

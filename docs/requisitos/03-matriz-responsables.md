@@ -15,7 +15,8 @@ por niveles fácil de leer.
   reinicia el SLA (ver 02).
 - RF-03.5 Si no hay un nivel superior con personas, el ticket se marca **"Requiere intervención del Gestor"**
   y no se reasigna.
-- RF-03.6 Si un área reduce su número de niveles, quienes quedan por encima pasan al nivel más alto disponible.
+- RF-03.6 No se puede reducir el número de niveles de un área por debajo del nivel más alto ocupado; primero
+  se mueve a esas personas a un nivel inferior.
 - RF-03.7 La sección Áreas se organiza en tres pestañas: **Áreas y personas** (alta de áreas y asignación de
   personas, editable en línea), **Matriz de escalamiento** (niveles por área, con el más alto arriba; cada
   persona se arrastra al nivel deseado, o se mueve desde el menú de su etiqueta en pantallas táctiles) y **Días festivos**.
@@ -26,7 +27,7 @@ por niveles fácil de leer.
 - Nivel 2 vacío → el ticket escala al nivel 3.
 - Ticket de una persona del nivel más alto escala → bandera "Requiere intervención", Gestor notificado.
 - Persona en nivel 3 cambia a un área con 2 niveles sin indicar nivel → queda en nivel 1.
-- Área de 3 niveles se reduce a 2 → quienes estaban en el nivel 3 pasan al 2.
+- Área de 3 niveles con alguien en el nivel 3 se intenta reducir a 2 → error que indica el nivel ocupado.
 
 ## Evolución prevista
 La reasignación a un compañero del mismo nivel o el envío a otra área se definirán en el módulo de
