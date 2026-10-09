@@ -86,6 +86,139 @@ CREATE OR REPLACE FUNCTION pg_temp.survey(t int, sent timestamptz, rating int, c
   SELECT t, client_email, md5(random()::text) || md5(random()::text), sent, sent + interval '7 days', rating,
          coalesce(comment, ''), answered FROM tickets_tickets WHERE id = t $$;
 
+-- Genera el histórico sintético (cerrado) con eventos de primera respuesta, escalamientos, cierres y encuestas.
+CREATE OR REPLACE FUNCTION pg_temp.history(n timestamptz) RETURNS void LANGUAGE plpgsql AS $fn$
+DECLARE
+  tz text := 'America/Mexico_City';
+  people int[] := ARRAY(SELECT id FROM users_users WHERE role = 'usuario' AND area_id IS NOT NULL
+                        AND email LIKE '%@opendesk.test' ORDER BY id);
+  clients text[] := ARRAY['Grupo Andrade', 'Ferretería López', 'Comercial Rivera', 'Distribuidora Sol', 'Hotel Las Palmas',
+                          'Constructora Delta', 'Clínica San Rafael', 'Tienda Verde', 'Laboratorios Vida', 'Grupo Aurora',
+                          'Transportes Medina', 'Panadería La Espiga', 'Colegio Montessori Norte', 'Abarrotes Don Pepe'];
+  titles text[] := ARRAY['No puedo iniciar sesión', 'Error al generar factura', 'Lentitud en el sistema', 'Solicitud de alta de usuario',
+                         'Cobro no reconocido', 'Falla en la impresión de tickets', 'Reporte con datos incorrectos',
+                         'Cambio de datos fiscales', 'Restablecer contraseña', 'Integración sin sincronizar',
+                         'Duda sobre el estado de cuenta', 'Error al cargar archivos', 'Configuración de correo', 'Acceso a la VPN'];
+  comments text[] := ARRAY['Muy buena atención, rápida y clara.', 'Resolvieron el problema a la primera.',
+                           'Tardaron más de lo esperado, pero quedó resuelto.', 'Excelente seguimiento.',
+                           'Me hubiera gustado recibir más avisos del avance.', 'Atención amable y profesional.'];
+  sts int[] := ARRAY(SELECT id FROM tickets_statuses ORDER BY id);
+  i int; who int; area int; lvl int; sla int; up int; t int; c text; email text;
+  created timestamptz; first_at timestamptz; closed timestamptz; due timestamptz;
+  frm int; met boolean; committed boolean; outcome text; prio text; hours numeric; r numeric;
+BEGIN
+  IF array_length(people, 1) IS NULL THEN RETURN; END IF;
+  FOR i IN 1..420 LOOP
+    -- Fecha y hora de creación (local): 85 % entre semana, horario laboral con picos a media mañana.
+    created := (date_trunc('day', (n - (1 + floor(random() * 89)) * interval '1 day') AT TIME ZONE tz)
+               + make_interval(hours => CASE WHEN random() < 0.9 THEN 8 + floor(random() * 6 + random() * 5)::int
+                                             ELSE floor(random() * 24)::int END, mins => floor(random() * 60)::int))
+               AT TIME ZONE tz;
+    IF extract(isodow FROM created AT TIME ZONE tz) >= 6 AND random() < 0.7 THEN
+      created := created - interval '2 days';
+    END IF;
+    who := people[1 + floor(random() * array_length(people, 1))::int];
+    SELECT u.area_id, u.level, a.sla_hours INTO area, lvl, sla FROM users_users u JOIN areas_areas a ON a.id = u.area_id WHERE u.id = who;
+    r := random();
+    prio := CASE WHEN r < 0.25 THEN 'alta' WHEN r < 0.75 THEN 'media' ELSE 'baja' END;
+    c := CASE WHEN random() < 0.85 THEN clients[1 + floor(random() * array_length(clients, 1))::int] END;
+    email := CASE WHEN c IS NOT NULL THEN lower(regexp_replace(translate(c, 'áéíóúñ ', 'aeioun.'), '[^a-z.]', '', 'g')) || '@cliente.test' END;
+    -- Primera respuesta: ~80 % dentro del SLA.
+    frm := greatest(5, (sla * 60 * power(random(), 1.4) * 1.25)::int);
+    met := frm <= sla * 60;
+    -- Resolución en horas, más rápida en prioridad alta.
+    hours := frm / 60.0 + (CASE prio WHEN 'alta' THEN 6 WHEN 'media' THEN 20 ELSE 40 END) * (0.2 + random() * random() * 3);
+    closed := least(created + hours * interval '1 hour', n - interval '30 minutes');
+    committed := random() < 0.55;
+    outcome := CASE WHEN random() < 0.88 THEN 'resuelto' ELSE 'no_resuelto' END;
+
+    INSERT INTO tickets_tickets (title, description, area_id, assignee_id, priority, client_name, client_email, status, outcome,
+                                 due_from, due_at, committed, created_by, created_at, closed_at, status_id)
+    VALUES (titles[1 + floor(random() * array_length(titles, 1))::int], 'Ticket histórico generado para la analítica.',
+            area, who, prio, c, email, 'cerrado', outcome, created, created + sla * interval '1 hour', committed,
+            pg_temp.u('mariana.ruiz'), created, closed,
+            CASE WHEN random() < 0.4 THEN sts[1 + floor(random() * array_length(sts, 1))::int] END)
+    RETURNING id INTO t;
+    INSERT INTO tickets_events (ticket_id, kind, actor_id, created_at, data)
+    VALUES (t, 'created', pg_temp.u('mariana.ruiz'), created, json_build_object('to', who));
+
+    -- Sin respuesta a tiempo: la mitad de los incumplimientos termina en auto-escalamiento.
+    up := (SELECT id FROM users_users WHERE area_id = area AND level > lvl AND role = 'usuario' ORDER BY random() LIMIT 1);
+    IF NOT met AND up IS NOT NULL AND random() < 0.5 THEN
+      INSERT INTO tickets_events (ticket_id, kind, actor_id, created_at, data)
+      VALUES (t, 'assigned', NULL, created + sla * interval '1 hour',
+              json_build_object('from', who, 'to', up, 'area_id', area, 'reason', 'auto'));
+      UPDATE tickets_tickets SET assignee_id = up WHERE id = t;
+      who := up; frm := greatest(5, (sla * 60 * random() * 0.6)::int); met := true;
+      created := created + sla * interval '1 hour';
+    ELSIF up IS NOT NULL AND random() < 0.1 THEN
+      -- Escalamiento manual aceptado.
+      INSERT INTO tickets_events (ticket_id, kind, actor_id, created_at, state, decided_by, data, comment)
+      VALUES (t, 'escalate', who, created + interval '1 hour', 'accepted', pg_temp.u('jorge.medina'),
+              json_build_object('first_response_min', 60, 'sla_met', true), 'Requiere apoyo del siguiente nivel.');
+      INSERT INTO tickets_events (ticket_id, kind, actor_id, created_at, data)
+      VALUES (t, 'assigned', pg_temp.u('jorge.medina'), created + interval '1 hour',
+              json_build_object('from', who, 'to', up, 'area_id', area, 'reason', 'escalate'));
+      UPDATE tickets_tickets SET assignee_id = up WHERE id = t;
+      who := up; created := created + interval '1 hour';
+    END IF;
+
+    -- ~6 % llegó al área equivocada y se reasignó a otra.
+    IF random() < 0.06 THEN
+      up := (SELECT id FROM users_users WHERE role = 'usuario' AND area_id IS NOT NULL AND area_id <> area
+             AND users_users.email LIKE '%@opendesk.test' ORDER BY random() LIMIT 1);
+      INSERT INTO tickets_events (ticket_id, kind, actor_id, created_at, state, decided_by, data, comment)
+      VALUES (t, 'reassign', who, created + interval '30 minutes', 'accepted', pg_temp.u('mariana.ruiz'),
+              json_build_object('area_id', (SELECT area_id FROM users_users WHERE id = up)), 'No corresponde a mi área.');
+      INSERT INTO tickets_events (ticket_id, kind, actor_id, created_at, data)
+      VALUES (t, 'assigned', pg_temp.u('mariana.ruiz'), created + interval '30 minutes',
+              json_build_object('from', who, 'to', up, 'area_id', (SELECT area_id FROM users_users WHERE id = up), 'reason', 'reassign'));
+      UPDATE tickets_tickets SET assignee_id = up, area_id = (SELECT area_id FROM users_users WHERE id = up) WHERE id = t;
+      who := up; created := created + interval '30 minutes';
+    END IF;
+
+    -- Algunas propuestas rechazadas antes de la aceptada.
+    IF random() < 0.15 THEN
+      INSERT INTO tickets_events (ticket_id, kind, actor_id, created_at, state, decided_by, data, comment, decision_comment)
+      VALUES (t, 'update', who, created + interval '20 minutes', 'rejected', pg_temp.u('mariana.ruiz'),
+              json_build_object('due_at', pg_temp.iso(closed + interval '3 days')), 'Lo reviso la próxima semana.',
+              'Se necesita una fecha más cercana.');
+    END IF;
+
+    first_at := least(created + frm * interval '1 minute', closed);
+    IF committed THEN
+      due := first_at + (closed - first_at) * (0.8 + random() * 0.5);
+      INSERT INTO tickets_events (ticket_id, kind, actor_id, created_at, state, decided_by, data, comment)
+      VALUES (t, 'update', who, first_at, 'accepted', pg_temp.u('mariana.ruiz'),
+              json_build_object('due_at', pg_temp.iso(due), 'first_response_min', frm, 'sla_met', met), 'Atiendo y doy seguimiento.');
+      UPDATE tickets_tickets SET due_from = first_at, due_at = due WHERE id = t;
+      INSERT INTO tickets_events (ticket_id, kind, actor_id, created_at, state, decided_by, data, comment)
+      VALUES (t, 'close', who, closed, 'accepted', pg_temp.u('mariana.ruiz'),
+              json_build_object('outcome', outcome, 'committed', true, 'commitment_met', closed <= due), 'Atendido.');
+    ELSE
+      INSERT INTO tickets_events (ticket_id, kind, actor_id, created_at, state, decided_by, data, comment)
+      VALUES (t, 'close', who, first_at, 'accepted', pg_temp.u('jorge.medina'),
+              json_build_object('outcome', outcome, 'committed', false, 'first_response_min', frm, 'sla_met', met), 'Atendido.');
+    END IF;
+
+    IF random() < 0.05 THEN
+      INSERT INTO tickets_events (ticket_id, kind, actor_id, created_at, comment)
+      VALUES (t, 'reopened', pg_temp.u('mariana.ruiz'), closed - interval '1 hour', 'El cliente reportó que el problema regresó.');
+    END IF;
+
+    -- Encuesta: 75 % de los resueltos con correo; responde ~55 %; calificaciones sesgadas a 4–5.
+    IF outcome = 'resuelto' AND email IS NOT NULL AND random() < 0.75 THEN
+      r := random();
+      INSERT INTO surveys_surveys (ticket_id, email, token_hash, sent_at, expires_at, rating, comment, answered_at)
+      SELECT t, email, md5(random()::text) || md5(random()::text), closed, closed + interval '7 days', x.rating,
+             CASE WHEN x.rating IS NOT NULL AND random() < 0.3 THEN comments[1 + floor(random() * array_length(comments, 1))::int] ELSE '' END,
+             CASE WHEN x.rating IS NOT NULL THEN least(closed + random() * interval '2 days', n) END
+      FROM (SELECT CASE WHEN random() < 0.45 THEN NULL WHEN r < 0.45 THEN 5 WHEN r < 0.75 THEN 4 WHEN r < 0.88 THEN 3
+                        WHEN r < 0.95 THEN 2 ELSE 1 END AS rating) x;
+    END IF;
+  END LOOP;
+END $fn$;
+
 DO $$
 DECLARE
   n timestamptz := now();
@@ -357,4 +490,8 @@ BEGIN
   PERFORM pg_temp.ev(t, 'close', 'ricardo.fuentes', n - interval '6 days 2 hours', 'Corte ajustado a las 20:00 y probado con el cierre de ayer.',
     '{"outcome": "resuelto"}', 'accepted', 'jorge.medina');
   PERFORM pg_temp.survey(t, n - interval '6 days', 3, NULL, n - interval '5 days');
+
+  -- ===== Histórico sintético: ~420 tickets cerrados en los últimos 90 días, para la analítica ============
+  -- Más carga entre semana y en horario laboral; ~80 % de respuestas dentro del SLA; CSAT sesgado a 4–5.
+  PERFORM pg_temp.history(n);
 END $$;
