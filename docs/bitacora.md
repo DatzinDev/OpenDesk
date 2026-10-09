@@ -2,6 +2,20 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-09 — Datos de prueba completos
+
+**Cambios**
+- `api/seeds/dev.sql` carga 22 tickets que cubren todos los estados, con historial, avisos en la campana y encuestas:
+  - **Asignado:** recién creado, al 85 % del SLA, con propuesta rechazada, escalado, que requiere intervención del Gestor, reabierto, y uno con el SLA recién vencido para ver el auto-escalamiento.
+  - **Pendiente de aprobación:** una propuesta de cada tipo.
+  - **En seguimiento:** con compromiso vigente, por vencer y vencido.
+  - **Cerrado:** resuelto con encuesta contestada, sin responder y vencida; no resuelto; cerrado directamente por el Gestor.
+- El cargador del seed ejecuta el SQL directamente en el driver, para que un "%" en los textos no se interprete como parámetro.
+- Se borraron los tickets de prueba anteriores, con sus avisos, encuestas, adjuntos y registros de auditoría; los folios vuelven a empezar en OD-000001.
+
+**Decisiones**
+- Los datos de prueba no incluyen adjuntos, porque requieren archivos en el almacenamiento.
+
 ## 2026-10-09 — Cierre de la fase 5 y de la edición de tickets
 
 - Módulo 06 (encuesta de satisfacción) y edición de tickets validados en el entorno desplegado y publicados en `main`.
