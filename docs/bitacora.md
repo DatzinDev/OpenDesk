@@ -2,6 +2,10 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-09 — Cierre de la fase 5 y de la edición de tickets
+
+- Módulo 06 (encuesta de satisfacción) y edición de tickets validados en el entorno desplegado y publicados en `main`.
+
 ## 2026-10-09 — Edición de tickets
 
 **Cambios**
