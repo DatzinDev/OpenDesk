@@ -1,6 +1,6 @@
 import { ActionIcon, AppShell as Shell, Avatar, Burger, Group, Stack, Text, Tooltip } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconBuilding, IconChecklist, IconInbox, IconLogout, IconUsers, type Icon } from "@tabler/icons-react";
+import { IconBuilding, IconChartBar, IconChecklist, IconInbox, IconLogout, IconUsers, type Icon } from "@tabler/icons-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useLogout, useMe } from "@/features/auth";
 import { NotificationBell } from "@/features/notifications";
@@ -13,6 +13,7 @@ type NavItem = { to: string; label: string; icon: Icon; roles?: Role[] };
 const NAV: NavItem[] = [
   { to: "/mis-actividades", label: "Mis actividades", icon: IconChecklist, roles: ["usuario"] },
   { to: "/bandeja", label: "Bandeja", icon: IconInbox, roles: ["admin", "gestor"] },
+  { to: "/analitica", label: "Analítica", icon: IconChartBar },
   { to: "/usuarios", label: "Usuarios", icon: IconUsers, roles: ["admin", "gestor"] },
   { to: "/areas", label: "Áreas", icon: IconBuilding, roles: ["admin", "gestor"] },
 ];
