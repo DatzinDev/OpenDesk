@@ -1,4 +1,4 @@
-import { Anchor, Badge, Group, Paper, Stack, Text, Timeline } from "@mantine/core";
+import { Anchor, Badge, Group, Paper, Stack, Text, ThemeIcon, Timeline } from "@mantine/core";
 import {
   IconAlertTriangle,
   IconArrowsExchange,
@@ -13,8 +13,10 @@ import {
   IconTrendingUp,
   type Icon,
 } from "@tabler/icons-react";
+import { useTicketForm } from "@/features/settings";
+import classes from "../pages/TicketViews.module.css";
 import { useAreas } from "@/features/areas";
-import { OUTCOME_LABELS, PRIORITY_LABELS, type Priority, type TicketDetail, type TicketEvent } from "../types";
+import { OUTCOME_LABELS, priorityLabel, type Priority, type TicketDetail, type TicketEvent } from "../types";
 import { dateFmt } from "./Badges";
 
 const ICONS: Partial<Record<string, Icon>> = {
@@ -47,9 +49,6 @@ const FIELD_LABELS: Record<string, string> = {
   client_email: "el correo del cliente",
 };
 
-const show = (field: string, v: string | null) =>
-  v ? (field === "priority" ? PRIORITY_LABELS[v as Priority] : `«${v}»`) : "vacío";
-
 const REASONS: Record<string, string> = {
   escalate: "Escalado a",
   auto: "Venció el SLA; escalado automáticamente a",
@@ -60,6 +59,8 @@ const REASONS: Record<string, string> = {
 
 export function TicketTimeline({ ticket }: { ticket: TicketDetail }) {
   const { data: areas = [] } = useAreas();
+  const { data: form } = useTicketForm();
+  const show = (field: string, value: string | null) => value ? (field === "priority" ? priorityLabel(value as Priority, form?.system.find(f => f.id === "priority")?.options) : `«${value}»`) : "vacío";
   const who = (id?: string | null) => (id ? (ticket.names[String(id)] ?? "una persona") : "");
   const areaName = (id?: string) => areas.find((a) => a.id === id)?.name ?? "otra área";
 
@@ -86,6 +87,7 @@ export function TicketTimeline({ ticket }: { ticket: TicketDetail }) {
         const parts = Object.entries(e.data.changes ?? {}).map(([field, v]) =>
           v ? `${FIELD_LABELS[field] ?? field} (${show(field, v[0])} → ${show(field, v[1])})` : (FIELD_LABELS[field] ?? field),
         );
+        parts.push(...(e.data.custom_changes ?? []).map(c => `${c.label} (${c.before || "vacío"} → ${c.after || "vacío"})`));
         return `${by} editó ${parts.join(", ")}`;
       }
       case "closed":
@@ -102,7 +104,7 @@ export function TicketTimeline({ ticket }: { ticket: TicketDetail }) {
   };
 
   return (
-    <Timeline bulletSize={28} lineWidth={2}>
+    <Timeline bulletSize={32} lineWidth={1}>
       {ticket.events.map((e) => {
         // Tipos de evento antiguos o desconocidos (p. ej. comentarios previos) se muestran sin romper la vista.
         const Icon = ICONS[e.kind] ?? IconCircleDot;
@@ -110,7 +112,7 @@ export function TicketTimeline({ ticket }: { ticket: TicketDetail }) {
         return (
           <Timeline.Item
             key={e.id}
-            bullet={<Icon size={14} />}
+            bullet={<ThemeIcon radius="xl" size={32} variant="light" color={e.kind === "needs_manager" ? "red" : e.kind === "update" ? "contrast" : e.kind === "assigned" ? "blue" : state?.color ?? "navy"}><Icon size={17} stroke={1.6} /></ThemeIcon>}
             color={e.kind === "needs_manager" || e.kind === "commitment_overdue" ? "red" : state?.color === "orange" ? "orange" : "navy"}
             title={
               <Group gap="xs" wrap="wrap">
@@ -130,7 +132,7 @@ export function TicketTimeline({ ticket }: { ticket: TicketDetail }) {
             </Text>
             <Stack gap={6}>
               {e.comment && (
-                <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
+                <Text size="sm" className={classes.comment}>
                   {e.comment}
                 </Text>
               )}
@@ -151,6 +153,7 @@ export function TicketTimeline({ ticket }: { ticket: TicketDetail }) {
                   <Text size="xs" c="dimmed">
                     {e.state === "accepted" ? "Aceptada" : "Rechazada"} por {e.decided_by_name}
                     {e.data.outcome ? ` como ${OUTCOME_LABELS[e.data.outcome]}` : ""}
+                    {e.decided_at ? ` · ${dateFmt.format(new Date(e.decided_at))}` : ""}
                   </Text>
                   {e.decision_comment && (
                     <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>

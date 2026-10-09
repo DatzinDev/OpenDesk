@@ -22,7 +22,6 @@ export function MyTicketsPage() {
     <>
       <PageHeader
         title="Mis actividades"
-        description="Tus tickets, del plazo más próximo al más lejano."
         action={
           <SegmentedControl
             value={status}

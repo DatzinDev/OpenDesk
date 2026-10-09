@@ -1,7 +1,8 @@
 import { Badge, Group, Text, Tooltip } from "@mantine/core";
 import { IconAlertTriangle } from "@tabler/icons-react";
+import { useTicketForm } from "@/features/settings";
 import { formatSpan, useNow } from "@/shared/time";
-import { OUTCOME_LABELS, PRIORITY_LABELS, STATUS_LABELS, slaState, type Priority, type Ticket } from "../types";
+import { OUTCOME_LABELS, priorityLabel, STATUS_LABELS, slaState, type Priority, type Ticket } from "../types";
 
 export const dateFmt = new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short" });
 
@@ -18,9 +19,10 @@ export function StatusBadge({ ticket }: { ticket: Ticket }) {
 }
 
 export function PriorityBadge({ priority }: { priority: Priority }) {
+  const { data } = useTicketForm();
   return (
     <Badge variant="dot" color={PRIORITY_COLORS[priority]} radius="sm">
-      {PRIORITY_LABELS[priority]}
+      {priorityLabel(priority, data?.system.find(f => f.id === "priority")?.options)}
     </Badge>
   );
 }

@@ -1,6 +1,7 @@
 import { http, json, multipart } from "@/shared/api/http";
 import type {
   DecisionInput,
+  InboxOverview,
   Outcome,
   Person,
   ProposalInput,
@@ -16,6 +17,7 @@ const post = <T,>(path: string, body: unknown) => http<T>(path, { method: "POST"
 const qs = (f: Record<string, string | undefined>) => new URLSearchParams(Object.entries(f).filter(([, v]) => v) as [string, string][]).toString();
 
 export const ticketsApi = {
+  overview: () => http<InboxOverview>("/tickets/overview"),
   list: (f: TicketFilters = {}) => http<Ticket[]>(`/tickets?${qs(f)}`),
   page: (f: TicketFilters, page: number, size: number) =>
     http<{ items: Ticket[]; total: number }>(`/tickets/page?${qs({ ...f, page: String(page), size: String(size) })}`),

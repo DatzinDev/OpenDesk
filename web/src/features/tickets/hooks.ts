@@ -5,7 +5,7 @@ import type { TicketFilters } from "./types";
 export const useTickets = (f: TicketFilters = {}) => useQuery({ queryKey: ["tickets", f], queryFn: () => ticketsApi.list(f) });
 export const useTicketPage = (f: TicketFilters, page: number, size: number) =>
   useQuery({ queryKey: ["tickets", "page", f, page, size], queryFn: () => ticketsApi.page(f, page, size), placeholderData: keepPreviousData });
-export const useTicket = (id: string) => useQuery({ queryKey: ["ticket", id], queryFn: () => ticketsApi.get(id) });
+export const useTicket = (id: string) => useQuery({ queryKey: ["ticket", id], queryFn: () => ticketsApi.get(id), refetchInterval: 60_000 });
 export const usePeers = (enabled: boolean) => useQuery({ queryKey: ["peers"], queryFn: ticketsApi.peers, enabled });
 export const usePeople = (areaId: string | null) =>
   useQuery({ queryKey: ["people", areaId], queryFn: () => ticketsApi.people(areaId!), enabled: !!areaId });

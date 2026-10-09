@@ -2,14 +2,15 @@ import { FileInput } from "@mantine/core";
 import { IconPaperclip } from "@tabler/icons-react";
 import { ACCEPT, MAX_FILES, MAX_SIZE } from "../types";
 
-type Props = { value: File[]; onChange: (files: File[]) => void };
+type Props = { value: File[]; onChange: (files: File[]) => void; label?: string; description?: string; required?: boolean };
 
-export function FilesField({ value, onChange }: Props) {
+export function FilesField({ value, onChange, label = "Adjuntos", description, required }: Props) {
   const tooBig = value.find((f) => f.size > MAX_SIZE);
   return (
     <FileInput
-      label="Adjuntos"
-      description={`Imágenes o PDF, hasta ${MAX_FILES} archivos de 10 MB.`}
+      label={label}
+      required={required}
+      description={description || `Imágenes o PDF, hasta ${MAX_FILES} archivos de 10 MB.`}
       placeholder="Seleccionar archivos"
       leftSection={<IconPaperclip size={16} />}
       multiple

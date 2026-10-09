@@ -4,12 +4,13 @@ import { useStatuses, useTicketAction } from "../hooks";
 import type { Ticket } from "../types";
 
 /** El Gestor fija el estatus de seguimiento del ticket; el cambio queda en el historial. */
-export function TrackingSelect({ ticket }: { ticket: Ticket }) {
+export function TrackingSelect({ ticket, label = true }: { ticket: Ticket; label?: boolean }) {
   const { data: statuses = [] } = useStatuses();
   const set = useTicketAction((id: string | null) => ticketsApi.setStatus(ticket.id, id));
   return (
     <Select
-      label="Estatus de seguimiento"
+      label={label ? "Estatus de seguimiento" : undefined}
+      aria-label="Estatus de seguimiento"
       placeholder="Sin estatus"
       clearable
       disabled={ticket.status === "cerrado" || set.isPending}

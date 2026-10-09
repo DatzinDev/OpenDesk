@@ -11,11 +11,12 @@ export type TicketEvent = {
   actor_id: string | null;
   actor_name: string | null;
   comment: string;
-  data: { changes?: Record<string, [string | null, string | null] | null>; name?: string | null; due_at?: string; user_id?: string; area_id?: string; outcome?: Outcome; from?: string; to?: string; reason?: string };
+  data: { changes?: Record<string, [string | null, string | null] | null>; custom_changes?: { id: string; label: string; before: string; after: string }[]; name?: string | null; due_at?: string; user_id?: string; area_id?: string; outcome?: Outcome; from?: string; to?: string; reason?: string };
   state: "pending" | "accepted" | "rejected" | "cancelled" | null;
   decided_by: string | null;
   decided_by_name: string | null;
   decision_comment: string;
+  decided_at: string | null;
   created_at: string;
   attachments: Attachment[];
 };
@@ -31,6 +32,7 @@ export type Ticket = {
   priority: Priority;
   client_name: string | null;
   client_email: string | null;
+  custom_values: Record<string, string | number | boolean | null>;
   status: Status;
   outcome: Outcome | null;
   due_from: string;
@@ -41,10 +43,12 @@ export type Ticket = {
   created_by: string;
   created_at: string;
   closed_at: string | null;
+  last_activity_at: string | null;
   pending: TicketEvent | null;
 };
 
-export type TicketDetail = Ticket & { events: TicketEvent[]; names: Record<string, string> };
+export type TicketDetail = Ticket & { events: TicketEvent[]; names: Record<string, string>; deadline: { kind: "sla" | "commitment"; elapsed_hours: number; total_hours: number; percent: number; warning_percent: number; overdue: boolean; as_of: string } };
+export type InboxOverview = { open: number; pending: number; tracking: number; risk: number; overdue: number; intervention: number; as_of: string };
 
 export type TicketInput = {
   title: string;
@@ -54,18 +58,22 @@ export type TicketInput = {
   priority: Priority;
   client_name: string | null;
   client_email: string | null;
+  custom_values?: Record<string, string | number | boolean | null>;
+  form_revision?: number;
 };
 
 export type TicketUpdate = Partial<Pick<TicketInput, "title" | "description" | "priority">> & {
   client_name?: string;
   client_email?: string;
+  custom_values?: Record<string, string | number | boolean | null>;
+  form_revision?: number;
 };
 
 export type ProposalInput = { kind: ProposalKind; comment: string; due_at?: string; user_id?: string; area_id?: string };
 export type DecisionInput = { comment: string; outcome?: Outcome; user_id?: string };
 export type TrackingStatus = { id: string; name: string; is_active: boolean };
 export type Person = { id: string; name: string; level: number | null };
-export type TicketFilters = { status?: string; area_id?: string; assignee_id?: string; q?: string };
+export type TicketFilters = { status?: string; area_id?: string; assignee_id?: string; priority?: Priority; q?: string };
 
 export const STATUS_LABELS: Record<Status, string> = {
   asignado: "Asignado",
@@ -96,4 +104,8 @@ export function slaState(t: Pick<Ticket, "due_from" | "due_at" | "status">, at =
   const left = (due - at) / Math.max(due - from, 1);
   const color = t.status === "cerrado" ? "gray" : left <= 0.1 ? "red" : left <= 0.5 ? "yellow" : "teal";
   return { color, overdue: t.status !== "cerrado" && due < at };
+}
+
+export function priorityLabel(priority: Priority, options: readonly { id: string; label: string }[] = []) {
+  return options.find(option => option.id === priority)?.label ?? PRIORITY_LABELS[priority];
 }
