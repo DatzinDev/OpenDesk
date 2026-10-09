@@ -1,11 +1,10 @@
 import { Alert, Avatar, Group, Paper, Select, Stack, Table, Text, Title } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useAreas } from "@/features/areas";
-import { PageHeader } from "@/shared/ui";
 import { useSetManager, useUsers } from "../hooks";
 import type { User } from "../types";
 
-export function MatrixPage() {
+export function EscalationMatrix() {
   const { data: users = [] } = useUsers();
   const { data: areas = [] } = useAreas();
   const setManager = useSetManager();
@@ -24,16 +23,15 @@ export function MatrixPage() {
     );
 
   return (
-    <>
-      <PageHeader
-        title="Matriz de responsables"
-        description="A quién se escala un ticket cuando la persona asignada lo escala o no responde a tiempo."
-      />
-      <Stack gap="lg">
+    <Stack gap="lg">
+      <Text size="sm" c="dimmed">
+        A quién se escala un ticket cuando la persona asignada lo escala o no responde a tiempo. El responsable
+        debe pertenecer a la misma área.
+      </Text>
         {withoutArea.length > 0 && (
           <Alert color="orange" variant="light">
             {withoutArea.length === 1 ? "1 persona no tiene" : `${withoutArea.length} personas no tienen`} área asignada:{" "}
-            {withoutArea.map((u) => u.name).join(", ")}. Asígnala desde Usuarios para incluirla en la matriz.
+            {withoutArea.map((u) => u.name).join(", ")}. Asígnala en la pestaña Áreas para incluirla en la matriz.
           </Alert>
         )}
         {areas
@@ -105,7 +103,6 @@ export function MatrixPage() {
             Crea un área y asígnale personas para construir la matriz.
           </Text>
         )}
-      </Stack>
-    </>
+    </Stack>
   );
 }

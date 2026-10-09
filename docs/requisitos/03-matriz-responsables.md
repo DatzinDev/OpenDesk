@@ -6,7 +6,9 @@ Saber siempre a quién sube un ticket cuando alguien escala o no responde a tiem
 ## Reglas
 - RF-03.1 Las personas con rol Usuario pertenecen a un área y tienen como máximo **un** responsable
   directo: otro Usuario activo **de la misma área**. Puede quedar vacío (tope de la cadena).
-- RF-03.2 Vista de matriz: tabla `Usuario | Área | Responsable directo`, agrupada por área y editable en línea.
+- RF-03.2 La sección Áreas se organiza en tres pestañas: **Áreas y personas** (alta de áreas y asignación
+  de personas, editable en línea), **Matriz de escalamiento** (responsable directo por persona, agrupada por
+  área y editable en línea) y **Días festivos**.
 - RF-03.3 No se permiten ciclos (A → B → A). El sistema lo valida al guardar.
 - RF-03.4 Escalamiento (manual o automático) reasigna el ticket al responsable directo del
   asignado actual; el asignado anterior queda en el historial.
