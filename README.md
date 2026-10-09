@@ -19,6 +19,7 @@ Todo en una sola plataforma open source que puedes desplegar en tu propia infrae
 ![React](https://img.shields.io/badge/React-18-0b1d3a?logo=react&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-0b1d3a?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-0b1d3a?logo=docker&logoColor=white)
+![Licencia](https://img.shields.io/badge/licencia-AGPL--3.0-0b1d3a)
 ![Estado](https://img.shields.io/badge/estado-en%20desarrollo-ff8e3c)
 
 </div>
@@ -130,6 +131,12 @@ Las convenciones de commits, el flujo de trabajo y el historial de decisiones es
 
 Las contribuciones son bienvenidas. Abre un *issue* para describir el problema o la mejora antes de
 enviar un *pull request*, y mantén cada cambio enfocado en un solo módulo.
+
+## Licencia
+
+OpenDesk se distribuye bajo la [GNU Affero General Public License v3.0](LICENSE). Puedes usarlo, modificarlo
+y desplegarlo libremente. Si ofreces una versión modificada como servicio a través de la red, debes poner su
+código fuente a disposición de sus usuarios bajo la misma licencia.
 
 ---
 
