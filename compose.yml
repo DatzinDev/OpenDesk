@@ -1,0 +1,44 @@
+name: opendesk
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: opendesk
+      POSTGRES_USER: opendesk
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U opendesk"]
+      interval: 3s
+      retries: 20
+
+  api:
+    build: ./api
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://opendesk:${POSTGRES_PASSWORD}@db/opendesk
+    volumes:
+      - ./api:/srv
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: node:22-alpine
+    working_dir: /web
+    command: sh -c "npm install --no-audit --no-fund && npm run dev"
+    environment:
+      API_URL: http://api:8000
+    volumes:
+      - ./web:/web
+      - web-modules:/web/node_modules
+    ports:
+      - "8080:8080"
+    depends_on:
+      - api
+
+volumes:
+  db-data:
+  web-modules:
