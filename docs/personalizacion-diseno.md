@@ -1,6 +1,6 @@
 # Personalización de OpenDesk
 
-Estado: alcance aprobado; diseño pendiente de revisión antes de implementar.
+Estado: diseño aprobado, implementado y desplegado en tank el 9 de octubre de 2026. Revisión visual autenticada pendiente por indisponibilidad del plugin de navegador.
 
 ## Resultado esperado
 

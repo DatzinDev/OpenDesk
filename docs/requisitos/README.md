@@ -18,6 +18,7 @@ Documentos relacionados: [Stack y arquitectura](../arquitectura.md) · [Diseño]
 | 06 | Encuesta de satisfacción | [06-encuesta.md](06-encuesta.md) | Validado |
 | 07 | Analítica | [07-analitica.md](07-analitica.md) | Validado |
 | 08 | Auditoría y parámetros | [08-auditoria-parametros.md](08-auditoria-parametros.md) | En desarrollo |
+| 09 | Identidad y formulario global | [09-personalizacion.md](09-personalizacion.md) | Implementado |
 
 ## Alcance v1
 
@@ -35,7 +36,7 @@ Documentos relacionados: [Stack y arquitectura](../arquitectura.md) · [Diseño]
 
 **Fuera (v1)**
 - Portal para que el cliente final cree tickets (el ticket lo crea el Gestor).
-- Roles/permisos configurables, campos personalizados, formularios dinámicos.
+- Roles/permisos configurables y formularios distintos por área. Los campos globales adicionales se incorporan en la extensión 09.
 - Integraciones (Slack, Teams, WhatsApp), app móvil, multi-idioma, multi-empresa.
 
 ## Orden de construcción propuesto
