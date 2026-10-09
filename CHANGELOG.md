@@ -19,6 +19,8 @@ Todos los cambios relevantes de OpenDesk se documentan en este archivo. El forma
 - Respaldos automáticos diarios de la base de datos y los adjuntos (servicio `backup`), con 14 días de retención y guía de restauración.
 - Guía para pasar de la demostración a uso real.
 
+- Logotipo de OpenDesk en la aplicación, la encuesta, el favicon y el README.
+
 ### Cambiado
 - La analítica mide la primera respuesta y la resolución en **horas hábiles** del área.
 

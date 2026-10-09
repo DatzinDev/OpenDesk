@@ -2,6 +2,19 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-09 — Logotipo de OpenDesk
+
+**Cambios**
+- Se integra el logotipo (isotipo y letras) entregado por el usuario:
+  - barra lateral, encabezado móvil y panel de inicio de sesión (con el isotipo como marca de agua);
+  - página pública de la encuesta;
+  - favicon y README, con versiones para el tema claro y el oscuro de GitHub.
+- Variantes optimizadas en blanco y en azul marino, generadas a partir de los originales, que quedan en `docs/assets/fuente/`.
+
+**Decisiones**
+- El favicon es el isotipo blanco sobre un cuadro azul marino, para que se vea en pestañas claras y oscuras.
+- Los correos conservan el nombre en texto, porque muchos clientes de correo bloquean las imágenes.
+
 ## 2026-10-09 — Respaldos
 
 **Cambios**
