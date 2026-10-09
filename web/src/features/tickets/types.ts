@@ -7,7 +7,7 @@ export type Attachment = { id: number; event_id: number; filename: string; conte
 
 export type TicketEvent = {
   id: number;
-  kind: ProposalKind | "created" | "assigned" | "status" | "closed" | "reopened" | "needs_manager";
+  kind: ProposalKind | "created" | "assigned" | "status" | "closed" | "reopened" | "needs_manager" | "commitment_overdue";
   actor_id: number | null;
   actor_name: string | null;
   comment: string;

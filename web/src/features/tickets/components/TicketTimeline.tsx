@@ -26,6 +26,7 @@ const ICONS: Record<TicketEvent["kind"], Icon> = {
   closed: IconCircleCheck,
   reopened: IconRefresh,
   needs_manager: IconAlertTriangle,
+  commitment_overdue: IconAlertTriangle,
 };
 
 const STATE = {
@@ -37,6 +38,7 @@ const STATE = {
 
 const REASONS: Record<string, string> = {
   escalate: "Escalado a",
+  auto: "Venció el SLA; escalado automáticamente a",
   reassign: "Reasignado a",
   manual: "Reasignado por el Gestor a",
   reopen: "Asignado de nuevo a",
@@ -70,6 +72,8 @@ export function TicketTimeline({ ticket }: { ticket: TicketDetail }) {
         return `${by} cerró el ticket como ${OUTCOME_LABELS[e.data.outcome!]}`;
       case "reopened":
         return `${by} reabrió el ticket`;
+      case "commitment_overdue":
+        return "Venció la fecha compromiso sin cierre";
       default:
         return "No hay un nivel superior con personas. Requiere intervención del Gestor.";
     }
@@ -84,7 +88,7 @@ export function TicketTimeline({ ticket }: { ticket: TicketDetail }) {
           <Timeline.Item
             key={e.id}
             bullet={<Icon size={14} />}
-            color={e.kind === "needs_manager" ? "red" : state?.color === "orange" ? "orange" : "navy"}
+            color={e.kind === "needs_manager" || e.kind === "commitment_overdue" ? "red" : state?.color === "orange" ? "orange" : "navy"}
             title={
               <Group gap="xs" wrap="wrap">
                 <Text size="sm" fw={500}>

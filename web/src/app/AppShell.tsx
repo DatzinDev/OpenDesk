@@ -3,6 +3,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { IconBuilding, IconChecklist, IconInbox, IconLogout, IconUsers, type Icon } from "@tabler/icons-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useLogout, useMe } from "@/features/auth";
+import { NotificationBell } from "@/features/notifications";
 import { ROLE_LABELS, type Role } from "@/features/users";
 import { DatzinSignature } from "@/shared/ui";
 import classes from "./AppShell.module.css";
@@ -29,18 +30,24 @@ export function AppShell() {
           <Text fw={600} c="white">
             OpenDesk
           </Text>
-          <Burger opened={opened} onClick={toggle} color="white" size="sm" aria-label="Abrir menú" />
+          <Group gap="xs">
+            <NotificationBell />
+            <Burger opened={opened} onClick={toggle} color="white" size="sm" aria-label="Abrir menú" />
+          </Group>
         </Group>
       </Shell.Header>
 
       <Shell.Navbar className={classes.navbar} p="md">
-        <Group gap={4} px={12} py={8} mb="lg" visibleFrom="sm">
-          <Text fw={600} fz={20}>
-            OpenDesk
-          </Text>
-          <Text fw={600} fz={20} c="orange.4" aria-hidden>
-            .
-          </Text>
+        <Group justify="space-between" px={12} py={8} mb="lg" visibleFrom="sm">
+          <Group gap={4}>
+            <Text fw={600} fz={20}>
+              OpenDesk
+            </Text>
+            <Text fw={600} fz={20} c="orange.4" aria-hidden>
+              .
+            </Text>
+          </Group>
+          <NotificationBell />
         </Group>
 
         <Stack gap={4} style={{ flex: 1 }} component="nav" aria-label="Navegación principal">

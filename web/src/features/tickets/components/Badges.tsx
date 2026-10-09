@@ -1,5 +1,6 @@
 import { Badge, Group, Text, Tooltip } from "@mantine/core";
 import { IconAlertTriangle } from "@tabler/icons-react";
+import { formatSpan, useNow } from "@/shared/time";
 import { OUTCOME_LABELS, PRIORITY_LABELS, STATUS_LABELS, slaState, type Priority, type Ticket } from "../types";
 
 export const dateFmt = new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short" });
@@ -24,20 +25,22 @@ export function PriorityBadge({ priority }: { priority: Priority }) {
   );
 }
 
-/** Plazo vigente con semáforo: SLA de primera respuesta o fecha compromiso. */
+/** Plazo vigente con semáforo y cronómetro: SLA de primera respuesta o fecha compromiso. */
 export function DueLabel({ ticket }: { ticket: Ticket }) {
+  const now = useNow(1000);
   if (ticket.status === "cerrado") return <Text size="sm" c="dimmed">—</Text>;
-  const { color, overdue } = slaState(ticket);
+  const { color, overdue } = slaState(ticket, now);
   const what = ticket.committed ? "Compromiso" : "SLA";
+  const left = Date.parse(ticket.due_at) - now;
   return (
-    <Tooltip label={`${what}: ${dateFmt.format(new Date(ticket.due_at))}`}>
+    <Tooltip label={`${what}: vence el ${dateFmt.format(new Date(ticket.due_at))}`}>
       <Group gap={6} wrap="nowrap">
         <span
           aria-hidden
           style={{ width: 8, height: 8, borderRadius: 8, background: `var(--mantine-color-${color}-6)`, flex: "none" }}
         />
-        <Text size="sm" c={overdue ? "red.7" : undefined} fw={overdue ? 500 : undefined}>
-          {overdue ? `${what} vencido` : `${what} ${dateFmt.format(new Date(ticket.due_at))}`}
+        <Text size="sm" c={overdue ? "red.7" : undefined} fw={overdue ? 500 : undefined} style={{ fontVariantNumeric: "tabular-nums" }}>
+          {overdue ? `${what} vencido hace ${formatSpan(left)}` : `${what}: quedan ${formatSpan(left)}`}
         </Text>
       </Group>
     </Tooltip>
