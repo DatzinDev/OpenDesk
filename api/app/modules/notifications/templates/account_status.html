@@ -1,0 +1,7 @@
+<h1 style="font-size:20px;margin:0 0 16px;">Hola, {{ name }}</h1>
+{% if active %}
+<p style="margin:0;">Tu acceso a OpenDesk fue reactivado. Puedes volver a entrar con tu cuenta de Google.</p>
+<p style="margin:28px 0 8px;"><a href="{{ app_url }}" style="display:inline-block;background:#0b1d3a;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:8px;">Entrar a OpenDesk</a></p>
+{% else %}
+<p style="margin:0;">Tu acceso a OpenDesk fue desactivado. Si crees que es un error, contacta al responsable de la plataforma en tu organización.</p>
+{% endif %}

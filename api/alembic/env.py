@@ -1,0 +1,11 @@
+from alembic import context
+
+from app.core.db import Base, engine
+from app.modules.audit import models as _audit  # noqa: F401  registra tablas en Base.metadata
+from app.modules.identity import models as _identity  # noqa: F401
+from app.modules.users import models as _users  # noqa: F401
+
+with engine.connect() as connection:
+    context.configure(connection=connection, target_metadata=Base.metadata)
+    with context.begin_transaction():
+        context.run_migrations()
