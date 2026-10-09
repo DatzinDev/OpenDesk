@@ -18,7 +18,7 @@ export function TeamTab({ r }: { r: Report }) {
       </SimpleGrid>
       <Paper withBorder radius="lg" mb="lg">
         <Table.ScrollContainer minWidth={900}>
-          <Table verticalSpacing="sm" horizontalSpacing="md" highlightOnHover>
+          <Table verticalSpacing="xs" horizontalSpacing="md" highlightOnHover>
             <Table.Thead>
               <Table.Tr>
                 {["Persona", "Carga actual", "Cerrados", "SLA cumplido", "1.ª respuesta (háb.)", "Resolución (háb.)", "CSAT", "Rechazos", "Escalamientos"].map((h) => (
@@ -54,7 +54,7 @@ export function TeamTab({ r }: { r: Report }) {
       </Paper>
       <SimpleGrid cols={{ base: 1, lg: 2 }}>
         <ChartCard title="Carga actual por persona" question="¿El trabajo está bien repartido?" empty={!people.length}>
-          <BarChart h={Math.max(220, people.length * 28)} data={people.slice(0, 15)} dataKey="persona" orientation="vertical"
+          <BarChart h={Math.max(220, Math.min(15, people.length) * 28)} data={people.slice(0, 15)} dataKey="persona" orientation="vertical"
             yAxisProps={{ width: 130 }} series={[{ name: "carga", label: "Tickets abiertos", color: "navy.6" }]} />
         </ChartCard>
         <ChartCard title="Carga por nivel de escalamiento" question="¿Los niveles altos están absorbiendo demasiado?" empty={!r.series.load_by_level.length}>

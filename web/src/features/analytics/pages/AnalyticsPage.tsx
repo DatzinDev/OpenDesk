@@ -1,4 +1,4 @@
-import { Alert, Button, Center, Group, Loader, SegmentedControl, Select, Tabs, TextInput } from "@mantine/core";
+import { Alert, Button, Group, Paper, Skeleton, Stack, SegmentedControl, Select, Tabs, Text, TextInput } from "@mantine/core";
 import { IconDownload } from "@tabler/icons-react";
 import { useSearchParams } from "react-router-dom";
 import { useAreas } from "@/features/areas";
@@ -13,6 +13,7 @@ import { SummaryTab } from "../components/tabs/SummaryTab";
 import { TeamTab } from "../components/tabs/TeamTab";
 import { TimesTab } from "../components/tabs/TimesTab";
 import { useReport } from "../hooks";
+import { ReportReading } from "../components/ReportReading";
 
 const TABS: { value: Tab; label: string; view: (r: Report) => JSX.Element }[] = [
   { value: "summary", label: "Resumen", view: (r) => <SummaryTab r={r} /> },
@@ -53,7 +54,6 @@ export function AnalyticsPage() {
     <>
       <PageHeader
         title="Analítica"
-        description={staff ? "Indicadores de atención, actualizados cada minuto." : "Tus indicadores de atención, actualizados cada minuto."}
         action={
           staff && tab === "summary" && (
             <Button component="a" href={analyticsApi.exportUrl(filters)} variant="default" leftSection={<IconDownload size={16} />}>
@@ -62,7 +62,8 @@ export function AnalyticsPage() {
           )
         }
       />
-      <Group gap="sm" mb="lg" wrap="wrap" align="flex-end">
+      <Paper withBorder radius="lg" p="sm" mb="md">
+      <Group gap="sm" wrap="wrap" align="center">
         <SegmentedControl
           value={range}
           onChange={(v) => set({ rango: v, desde: null, hasta: null })}
@@ -89,9 +90,11 @@ export function AnalyticsPage() {
           </>
         )}
       </Group>
+      <Text size="xs" c="gray.7" mt="xs">{dayLabel(filters.start)} — {dayLabel(filters.end)} · Comparación con el periodo anterior de igual duración</Text>
+      </Paper>
       <Tabs value={tab} onChange={(v) => set({ tab: v })} keepMounted={false}>
         {tabs.length > 1 && (
-          <Tabs.List mb="lg">
+          <Tabs.List mb="sm">
             {tabs.map((t) => (
               <Tabs.Tab key={t.value} value={t.value}>
                 {t.label}
@@ -103,12 +106,16 @@ export function AnalyticsPage() {
           {isError ? (
             <Alert color="red" variant="light">{error.message}</Alert>
           ) : data ? (
-            current.view(data)
+            <><ReportReading tab={tab} report={data} />{current.view(data)}</>
           ) : (
-            <Center py="xl"><Loader color="navy" /></Center>
+            <Stack gap="md" aria-label="Cargando indicadores"><Skeleton height={72} /><Skeleton height={110} /><Skeleton height={280} /></Stack>
           )}
         </Tabs.Panel>
       </Tabs>
     </>
   );
+}
+
+function dayLabel(value: string) {
+  return new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${value}T12:00:00`));
 }

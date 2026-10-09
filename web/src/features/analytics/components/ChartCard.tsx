@@ -6,10 +6,10 @@ type Props = { title: string; question?: string; empty?: boolean; children: Reac
 /** Tarjeta de gráfica: el título dice qué es y la pregunta, para qué sirve. */
 export function ChartCard({ title, question, empty, children }: Props) {
   return (
-    <Paper withBorder radius="lg" p="lg" h="100%">
-      <Stack gap="md" h="100%">
+    <Paper withBorder radius="lg" p="md" h="100%" style={{ minWidth: 0 }}>
+      <Stack gap="sm" h="100%">
         <div>
-          <Title order={3} fz="sm" fw={600}>
+          <Title order={3} fz="md" fw={600}>
             {title}
           </Title>
           {question && (

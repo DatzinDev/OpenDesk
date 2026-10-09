@@ -1,6 +1,7 @@
 import { Group, Paper, Text, Tooltip } from "@mantine/core";
 import { IconArrowDownRight, IconArrowUpRight, IconInfoCircle } from "@tabler/icons-react";
 import type { Kpi } from "../api";
+import { csat, num, pct } from "../format";
 
 type Props = {
   label: string;
@@ -18,9 +19,9 @@ export function KpiCard({ label, kpi, format, better, hint }: Props) {
   const good = diff == null || diff === 0 || !better ? null : (diff > 0) === (better === "up");
   const Arrow = diff != null && diff < 0 ? IconArrowDownRight : IconArrowUpRight;
   return (
-    <Paper withBorder radius="lg" p="md">
+    <Paper withBorder radius="lg" p="sm" h="100%">
       <Group gap={4} wrap="nowrap">
-        <Text size="xs" c="dimmed" lineClamp={1}>
+        <Text size="xs" c="gray.7">
           {label}
         </Text>
         {hint && (
@@ -29,14 +30,14 @@ export function KpiCard({ label, kpi, format, better, hint }: Props) {
           </Tooltip>
         )}
       </Group>
-      <Text fz={26} fw={600} mt={4} style={{ fontVariantNumeric: "tabular-nums" }}>
+      <Text fz={24} fw={600} mt={4} style={{ fontVariantNumeric: "tabular-nums" }}>
         {format(value)}
       </Text>
-      {diff != null && diff !== 0 && (
+      {diff != null && (
         <Group gap={2} mt={2} c={good == null ? "dimmed" : good ? "teal.7" : "red.7"}>
-          <Arrow size={14} />
+          {diff !== 0 && <Arrow size={14} />}
           <Text size="xs" c="inherit">
-            {format(Math.abs(diff))} vs. periodo anterior
+            {diff === 0 ? "Sin cambio" : `${format === pct ? `${num(Math.abs(diff))} pp` : format === csat ? `${num(Math.abs(diff))} puntos` : format(Math.abs(diff))} ${diff > 0 ? "más" : "menos"}`} vs. periodo anterior
           </Text>
         </Group>
       )}
