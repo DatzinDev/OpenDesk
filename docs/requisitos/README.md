@@ -17,7 +17,7 @@ Documentos relacionados: [Stack y arquitectura](../arquitectura.md) · [Diseño]
 | 05 | Notificaciones | [05-notificaciones.md](05-notificaciones.md) | Validado |
 | 06 | Encuesta de satisfacción | [06-encuesta.md](06-encuesta.md) | Validado |
 | 07 | Analítica | [07-analitica.md](07-analitica.md) | Validado |
-| 08 | Auditoría y parámetros | [08-auditoria-parametros.md](08-auditoria-parametros.md) | Pendiente |
+| 08 | Auditoría y parámetros | [08-auditoria-parametros.md](08-auditoria-parametros.md) | En desarrollo |
 
 ## Alcance v1
 

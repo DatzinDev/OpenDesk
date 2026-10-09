@@ -5,6 +5,15 @@ Todos los cambios relevantes de OpenDesk se documentan en este archivo. El forma
 [versionado semántico](https://semver.org/lang/es/). El detalle de cada entrega y sus decisiones está en la
 [bitácora](docs/bitacora.md).
 
+## [Sin publicar]
+
+### Agregado
+- Pantalla de **Configuración**:
+  - Para Admin y Gestor: nombre de la organización, anticipación del recordatorio, porcentaje de aviso del SLA y pregunta de la encuesta.
+  - Para el Admin: dominio permitido y zona horaria.
+  - Botón para enviar un correo de prueba.
+- Pantalla de **Auditoría** para el Administrador, con filtros por persona, tipo de evento y fechas.
+
 ## [0.1.0] — 2026-10-09
 
 Primera versión funcional: el flujo completo Gestor → Usuario → Gestor, con SLA, escalamiento, avisos,
@@ -63,9 +72,5 @@ encuesta de satisfacción y analítica.
 - Monolito modular con reglas de dependencia verificadas por pruebas.
 - Identificadores públicos UUID; el id entero queda para uso interno.
 - Despliegue completo con Docker Compose (desarrollo y producción) y datos de prueba opcionales (`DEV_SEED`).
-
-### Pendiente
-- Módulo 08: pantalla de auditoría y parámetros globales editables. Mientras tanto, el texto de la encuesta es
-  fijo y la anticipación del recordatorio se define con `REMINDER_HOURS`.
 
 [0.1.0]: https://github.com/DatzinDev/OpenDesk/releases/tag/v0.1.0

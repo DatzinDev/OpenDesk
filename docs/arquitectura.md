@@ -82,6 +82,7 @@ api/
 │       ├── areas/            áreas, horario, festivos y cálculo del SLA
 │       ├── tickets/          tickets, propuestas, decisiones, línea de tiempo y adjuntos
 │       ├── surveys/          encuesta CSAT al cliente; rutas públicas con token de un solo uso
+│       ├── settings/         parámetros globales editables; no importa otros módulos para no formar ciclos
 │       └── analytics/        métricas de solo lectura por pestaña y exportación CSV (excepción de lectura)
 └── tests/
 ```
@@ -183,7 +184,9 @@ web/src/
     ├── tickets/              bandeja, mis actividades y detalle de ticket
     ├── notifications/        campana de avisos
     ├── surveys/              página pública /encuesta/:token y resultado en el ticket
-    └── analytics/            tableros con @mantine/charts (carga diferida)
+    ├── analytics/            tableros con @mantine/charts (carga diferida)
+    ├── settings/             pantalla de Configuración
+    └── audit/                pantalla de Auditoría (solo Admin)
 ```
 
 ### Reglas de dependencia
