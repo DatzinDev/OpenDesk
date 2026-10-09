@@ -142,3 +142,9 @@ def active_in_area(db: Session, area_id: int) -> list[UserOut]:
 
 def names(db: Session, ids) -> dict[int, str]:
     return {u.id: u.name for u in repo.by_ids(db, set(ids) - {None})}
+
+
+def managers(db: Session) -> list[UserOut]:
+    """Gestores activos; si la organización aún no tiene, los Admins."""
+    people = repo.active_by_role(db, "gestor") or repo.active_by_role(db, "admin")
+    return [UserOut.model_validate(u) for u in people]

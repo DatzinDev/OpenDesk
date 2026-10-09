@@ -29,6 +29,10 @@ def active_in_area(db: Session, area_id: int) -> list[User]:
     return list(db.scalars(q))
 
 
+def active_by_role(db: Session, role: str) -> list[User]:
+    return list(db.scalars(select(User).where(User.role == role, User.is_active)))
+
+
 def by_ids(db: Session, ids) -> list[User]:
     return list(db.scalars(select(User).where(User.id.in_(ids))))
 
