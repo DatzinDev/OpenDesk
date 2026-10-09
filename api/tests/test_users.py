@@ -1,6 +1,8 @@
 import pytest
 from sqlalchemy import select
 
+from app.modules.areas import service as areas
+from app.modules.areas.schemas import AreaIn
 from app.modules.audit.models import AuditEntry
 from app.modules.identity import service as identity
 from app.modules.users import service
@@ -8,7 +10,10 @@ from app.modules.users.schemas import UserCreate, UserUpdate
 
 
 def make(db, actor, email, role):
-    return service.create_user(db, actor, UserCreate(email=email, name=email.split("@")[0], role=role))
+    area_id = None
+    if role == "usuario":
+        area_id = (areas.list_areas(db) or [areas.save_area(db, actor.id, AreaIn(name="General"))])[0].id
+    return service.create_user(db, actor, UserCreate(email=email, name=email.split("@")[0], role=role, area_id=area_id))
 
 
 @pytest.fixture

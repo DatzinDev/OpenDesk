@@ -17,3 +17,4 @@ MAIL_FROM_NAME = os.environ.get("MAIL_FROM_NAME", "OpenDesk")
 MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "true").lower() == "true"
 
 SECURE_COOKIES = APP_URL.startswith("https://")
+APP_TIMEZONE = os.environ.get("APP_TIMEZONE", "America/Mexico_City")

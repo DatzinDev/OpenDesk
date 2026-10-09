@@ -1,0 +1,92 @@
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
+
+from sqlalchemy.orm import Session
+
+from app.core import config
+from app.modules.areas import repository as repo
+from app.modules.areas import sla
+from app.modules.areas.events import AreaSaved, HolidaysChanged
+from app.modules.areas.models import Area, Holiday
+from app.modules.areas.schemas import AreaIn, AreaOut, HolidayIn, HolidayOut
+from app.shared.events import publish
+
+
+class Conflict(Exception):
+    pass
+
+
+class NotFound(Exception):
+    pass
+
+
+def _row(data: AreaIn) -> dict:
+    d = data.model_dump()
+    d["days"] = ",".join(map(str, d["days"]))
+    d["name"] = d["name"].strip()
+    return d
+
+
+def get(db: Session, area_id: int) -> AreaOut | None:
+    area = repo.get(db, area_id)
+    return AreaOut.model_validate(area) if area else None
+
+
+def list_areas(db: Session) -> list[AreaOut]:
+    return [AreaOut.model_validate(a) for a in repo.list_(db)]
+
+
+def save_area(db: Session, actor_id: int, data: AreaIn, area_id: int | None = None) -> AreaOut:
+    row = _row(data)
+    same_name = repo.get_by_name(db, row["name"])
+    if same_name and same_name.id != area_id:
+        raise Conflict("Ya existe un área con ese nombre.")
+    if area_id is None:
+        area = repo.add(db, Area(**row))
+        changes = {}
+    else:
+        area = repo.get(db, area_id)
+        if not area:
+            raise NotFound
+        changes = {k: [str(getattr(area, k)), str(v)] for k, v in row.items() if getattr(area, k) != v}
+        for k, v in row.items():
+            setattr(area, k, v)
+    db.commit()
+    if area_id is None or changes:
+        publish(AreaSaved(actor_id=actor_id, area_id=area.id, name=area.name, created=area_id is None, changes=changes))
+    return AreaOut.model_validate(area)
+
+
+def list_holidays(db: Session) -> list[HolidayOut]:
+    return [HolidayOut.model_validate(h) for h in repo.holidays(db)]
+
+
+def add_holiday(db: Session, actor_id: int, data: HolidayIn) -> HolidayOut:
+    if repo.get_holiday(db, data.day):
+        raise Conflict("Esa fecha ya está registrada como día festivo.")
+    h = repo.add(db, Holiday(day=data.day, name=data.name.strip()))
+    db.commit()
+    publish(HolidaysChanged(actor_id=actor_id, day=h.day.isoformat(), name=h.name, removed=False))
+    return HolidayOut.model_validate(h)
+
+
+def remove_holiday(db: Session, actor_id: int, day: date) -> None:
+    h = repo.get_holiday(db, day)
+    if not h:
+        raise NotFound
+    db.delete(h)
+    db.commit()
+    publish(HolidaysChanged(actor_id=actor_id, day=day.isoformat(), name=h.name, removed=True))
+
+
+def sla_deadline(db: Session, area_id: int, start: datetime) -> datetime:
+    """Vencimiento del SLA de primera respuesta para un ticket asignado en `start`."""
+    area = repo.get(db, area_id)
+    schedule = sla.Schedule(
+        always_open=area.always_open,
+        days=frozenset(int(d) for d in area.days.split(",") if d),
+        start=area.start_time,
+        end=area.end_time,
+        holidays=frozenset(h.day for h in repo.holidays(db)) if area.pause_on_holidays else frozenset(),
+    )
+    return sla.deadline(start, area.sla_hours, schedule, ZoneInfo(config.APP_TIMEZONE))

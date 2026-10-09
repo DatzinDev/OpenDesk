@@ -1,6 +1,7 @@
 from alembic import context
 
 from app.core.db import Base, engine
+from app.modules.areas import models as _areas  # noqa: F401
 from app.modules.audit import models as _audit  # noqa: F401  registra tablas en Base.metadata
 from app.modules.identity import models as _identity  # noqa: F401
 from app.modules.users import models as _users  # noqa: F401

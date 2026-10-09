@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, now
@@ -14,7 +14,8 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(120))
     picture: Mapped[str | None] = mapped_column(String(500))
     role: Mapped[str] = mapped_column(String(10))  # admin | gestor | usuario
-    # area_id y manager_id se agregan con los módulos de áreas y matriz de responsables.
+    area_id: Mapped[int | None] = mapped_column(ForeignKey("areas_areas.id"), index=True)  # solo rol usuario
+    manager_id: Mapped[int | None] = mapped_column(ForeignKey("users_users.id"), index=True)  # responsable directo
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_root: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

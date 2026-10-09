@@ -8,6 +8,7 @@ import pytest  # noqa: E402
 
 from app.core.db import Base, SessionLocal, engine  # noqa: E402
 from app.modules import audit, identity, notifications  # noqa: E402
+from app.modules.areas import models as _ar  # noqa: E402,F401
 from app.modules.audit import models as _a  # noqa: E402,F401
 from app.modules.identity import models as _i  # noqa: E402,F401
 from app.shared import events, mailer  # noqa: E402

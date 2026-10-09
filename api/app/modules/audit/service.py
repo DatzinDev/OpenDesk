@@ -1,5 +1,5 @@
 from app.core.db import SessionLocal
-from app.modules import identity, users
+from app.modules import areas, identity, users
 from app.modules.audit.models import AuditEntry
 from app.shared.events import subscribe
 from app.shared.mailer import MailFailed
@@ -19,4 +19,8 @@ def register() -> None:
         "user.updated", e.actor_id, "user", e.user_id, {"email": e.email, "changes": e.changes}))
     subscribe(identity.LoginSucceeded, lambda e: record("login.succeeded", e.user_id, "user", e.user_id))
     subscribe(identity.LoginDenied, lambda e: record("login.denied", data={"email": e.email, "reason": e.reason}))
+    subscribe(areas.AreaSaved, lambda e: record(
+        "area.created" if e.created else "area.updated", e.actor_id, "area", e.area_id, {"name": e.name, "changes": e.changes}))
+    subscribe(areas.HolidaysChanged, lambda e: record(
+        "holiday.removed" if e.removed else "holiday.added", e.actor_id, "holiday", e.day, {"name": e.name}))
     subscribe(MailFailed, lambda e: record("mail.failed", data={"to": e.to, "subject": e.subject, "error": e.error}))
