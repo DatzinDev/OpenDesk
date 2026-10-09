@@ -31,7 +31,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="OpenDesk", version="0.1.2", lifespan=lifespan, docs_url="/api/docs", openapi_url="/api/openapi.json")
+app = FastAPI(title="OpenDesk", version="0.1.3", lifespan=lifespan, docs_url="/api/docs", openapi_url="/api/openapi.json")
 
 
 @app.middleware("http")

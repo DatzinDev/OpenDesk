@@ -5,6 +5,11 @@ Todos los cambios relevantes de OpenDesk se documentan en este archivo. El forma
 [versionado semántico](https://semver.org/lang/es/). El detalle de cada entrega y sus decisiones está en la
 [bitácora](docs/bitacora.md).
 
+## [0.1.3] — 2026-10-09
+
+### Cambiado
+- Se elimina la pestaña Historial del ticket; el seguimiento permanece visible en Detalle.
+
 ## [0.1.2] — 2026-10-09
 
 ### Agregado
@@ -111,3 +116,5 @@ encuesta de satisfacción y analítica.
 [0.1.2]: https://github.com/DatzinDev/OpenDesk/releases/tag/v0.1.2
 [0.1.1]: https://github.com/DatzinDev/OpenDesk/releases/tag/v0.1.1
 [0.1.0]: https://github.com/DatzinDev/OpenDesk/releases/tag/v0.1.0
+
+[0.1.3]: https://github.com/DatzinDev/OpenDesk/releases/tag/v0.1.3

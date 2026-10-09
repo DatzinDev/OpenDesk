@@ -2,6 +2,10 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-09 — Versión 0.1.3
+
+- Se elimina la pestaña redundante Historial del ticket; el seguimiento sigue en Detalle.
+
 ## 2026-10-09 — Versión 0.1.2: personalización y vistas operativas
 
 **Cambios**
