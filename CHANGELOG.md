@@ -16,6 +16,9 @@ Todos los cambios relevantes de OpenDesk se documentan en este archivo. El forma
 - Avisos **instantáneos** en la campana; las listas de tickets en pantalla se actualizan solas.
 - Paginación de la Bandeja, de 50 en 50, con el total de tickets.
 
+- Respaldos automáticos diarios de la base de datos y los adjuntos (servicio `backup`), con 14 días de retención y guía de restauración.
+- Guía para pasar de la demostración a uso real.
+
 ### Cambiado
 - La analítica mide la primera respuesta y la resolución en **horas hábiles** del área.
 

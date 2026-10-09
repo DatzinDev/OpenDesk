@@ -50,7 +50,52 @@ colocarse detrás de un proxy inverso o un túnel con TLS.
 docker compose -f compose.prod.yml up -d --build
 ```
 
-Respalda los volúmenes `db-data` (PostgreSQL) y `storage-data` (adjuntos).
+## Respaldos y restauración
+
+El servicio `backup` de `compose.prod.yml` respalda todos los días a las 03:00 (zona `APP_TIMEZONE`):
+
+- `backups/db-AAAAMMDD-HHMM.dump`: la base de datos completa (`pg_dump`, formato personalizado).
+- `backups/adjuntos-AAAAMMDD-HHMM.tar.gz`: el volumen de adjuntos.
+
+Se conservan 14 días. Copia la carpeta `backups/` a otro equipo o a la nube para protegerte de una falla del
+servidor.
+
+```bash
+# Respaldo inmediato
+docker compose -f compose.prod.yml exec backup /bin/sh /backup.sh now
+
+# Restaurar la base de datos (reemplaza el contenido actual)
+docker compose -f compose.prod.yml exec -T db pg_restore -U opendesk -d opendesk --clean --if-exists < backups/db-AAAAMMDD-HHMM.dump
+
+# Restaurar los adjuntos
+docker compose -f compose.prod.yml stop storage
+docker run --rm -v opendesk_storage-data:/data -v "$PWD/backups":/b alpine sh -c "rm -rf /data/* && tar xzf /b/adjuntos-AAAAMMDD-HHMM.tar.gz -C /data"
+docker compose -f compose.prod.yml start storage
+```
+
+## Pasar de demostración a uso real
+
+Con `DEV_SEED=true` la instalación incluye áreas, personas y tickets ficticios. Para empezar a operar con datos
+reales:
+
+1. En `.env`, cambia a `DEV_SEED=false`.
+2. Borra los datos de prueba (las personas ficticias usan el dominio `@opendesk.test`):
+
+   ```bash
+   docker compose -f compose.prod.yml exec -T db psql -U opendesk <<'SQL'
+   BEGIN;
+   TRUNCATE surveys_surveys, notifications_notifications, tickets_attachments, tickets_events, tickets_tickets RESTART IDENTITY;
+   DELETE FROM audit_log;
+   DELETE FROM identity_sessions WHERE user_id IN (SELECT id FROM users_users WHERE email LIKE '%@opendesk.test');
+   DELETE FROM users_users WHERE email LIKE '%@opendesk.test';
+   DELETE FROM areas_areas a WHERE NOT EXISTS (SELECT 1 FROM users_users u WHERE u.area_id = a.id);
+   COMMIT;
+   SQL
+   ```
+3. Reinicia: `docker compose -f compose.prod.yml up -d`.
+4. Desde la aplicación, da de alta tus áreas, horarios, festivos, estatus y personas.
+
+El catálogo de estatus y los días festivos de ejemplo se conservan; ajústalos desde la sección Áreas.
 
 ## Servicios
 
@@ -72,6 +117,7 @@ flowchart LR
 | `worker` | Revisa los plazos cada minuto: avisos de SLA, auto-escalamiento y recordatorios. |
 | `db` | PostgreSQL 16. |
 | `storage` | SeaweedFS con API compatible con S3 para los adjuntos; sin puertos publicados. |
+| `backup` | Solo en producción: respaldo diario de la base de datos y los adjuntos en `./backups`. |
 
 **Backend:** Python 3.12, FastAPI, SQLAlchemy 2, Alembic, PostgreSQL 16, Authlib, boto3.
 **Frontend:** React 18, TypeScript, Vite, Mantine 7, TanStack Query.
