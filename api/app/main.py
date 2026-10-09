@@ -6,9 +6,11 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.core import config
 from app.core.db import SessionLocal
+from app.shared import storage
 from app.modules import audit, identity, notifications, users
 from app.modules.areas.router import router as areas_router
 from app.modules.identity.router import router as identity_router
+from app.modules.tickets.router import router as tickets_router
 from app.modules.users.router import router as users_router
 
 
@@ -19,6 +21,7 @@ async def lifespan(_: FastAPI):
     notifications.register()
     with SessionLocal() as db:
         users.ensure_root(db, config.ADMIN_EMAIL)
+    storage.ensure_bucket()
     yield
 
 
@@ -41,3 +44,4 @@ app.add_middleware(SessionMiddleware, secret_key=config.SECRET_KEY, session_cook
 app.include_router(identity_router)
 app.include_router(users_router)
 app.include_router(areas_router)
+app.include_router(tickets_router)
