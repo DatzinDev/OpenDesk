@@ -474,8 +474,16 @@ class Summary:
     assignee_id: int
     due_at: datetime
     committed: bool
+    client_name: str | None
+    client_email: str | None
 
 
 def summary(db: Session, ticket_id: int) -> Summary | None:
     t = repo.get(db, ticket_id)
-    return Summary(t.id, t.uuid, folio(t.id), t.title, t.assignee_id, _utc(t.due_at), t.committed) if t else None
+    return Summary(t.id, t.uuid, folio(t.id), t.title, t.assignee_id, _utc(t.due_at), t.committed, t.client_name,
+                   t.client_email) if t else None
+
+
+def visible_id(db: Session, actor: users.UserOut, ticket_id: UUID) -> int:
+    """id interno de un ticket que la persona puede ver; NotFound si no existe o no le corresponde."""
+    return _visible(db, actor, ticket_id).id
