@@ -5,6 +5,33 @@ Todos los cambios relevantes de OpenDesk se documentan en este archivo. El forma
 [versionado semántico](https://semver.org/lang/es/). El detalle de cada entrega y sus decisiones está en la
 [bitácora](docs/bitacora.md).
 
+## [0.1.2] — 2026-10-09
+
+### Agregado
+- Identidad de empresa configurable por Admin: logotipo, icono de pestaña y paletas de tres colores, predefinidas o personalizadas, con vista previa y contraste legible. Se conserva OpenDesk · Datzin.
+- Editor independiente del formulario global de tickets: preguntas ordenables, campos predeterminados editables y adicionales de texto, número, fecha, lista o sí/no. Se conservan respuestas históricas al desactivar campos u opciones.
+- Editor independiente de encuestas de clientes con múltiples preguntas de cinco estrellas. Cada envío conserva su formulario; CSAT sigue usando la pregunta de satisfacción general.
+- Campos adicionales en alta, edición, detalle e historial y exportación CSV.
+- Indicadores actuales de bandeja, filtro de prioridad y búsqueda por cliente; última actividad incluye decisiones registradas.
+
+### Cambiado
+- Bandeja con propuestas visibles, filtros compactos y tabla paginada de 20 tickets.
+- Detalle con información, seguimiento y columna de estado, acciones, plazo y adjuntos. Pestañas de archivos e historial y navegación entre tickets de la página actual.
+- Analítica con lecturas de los datos y jerarquía más clara para decidir.
+- Logotipo de empresa encima de OpenDesk; menos texto explicativo y mayor aprovechamiento del espacio.
+- SLA del detalle en horas hábiles; compromiso en tiempo natural. Los plazos cerrados permanecen al momento del cierre.
+- El correo preselecciona estrellas; las respuestas se confirman en la página de la encuesta.
+
+### Corregido
+- Protección de borradores de formularios al navegar y salir.
+- Rechazo de configuraciones obsoletas y de respuestas duplicadas de encuesta.
+- Recuperación de página al cerrar el último ticket y aislamiento de acciones al cambiar de ticket.
+- Valores numéricos inválidos y fórmulas en exportaciones CSV.
+
+### Actualización
+- Migraciones aditivas 0011–0013; realizar respaldo de base y adjuntos antes de actualizar.
+- La comparación visual con sesión en escritorio y móvil queda pendiente; no se certifica fidelidad exacta a las referencias.
+
 ## [0.1.1] — 2026-10-09
 
 ### Agregado
@@ -81,5 +108,6 @@ encuesta de satisfacción y analítica.
 - Identificadores públicos UUID; el id entero queda para uso interno.
 - Despliegue completo con Docker Compose (desarrollo y producción) y datos de prueba opcionales (`DEV_SEED`).
 
+[0.1.2]: https://github.com/DatzinDev/OpenDesk/releases/tag/v0.1.2
 [0.1.1]: https://github.com/DatzinDev/OpenDesk/releases/tag/v0.1.1
 [0.1.0]: https://github.com/DatzinDev/OpenDesk/releases/tag/v0.1.0

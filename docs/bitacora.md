@@ -2,6 +2,26 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-09 — Versión 0.1.2: personalización y vistas operativas
+
+**Cambios**
+- Identidad, paletas de tres colores y logotipo de empresa sobre OpenDesk.
+- Formularios globales de tickets y encuestas con editores independientes; conservación de datos históricos y preguntas por envío.
+- Bandeja y detalle reorganizados según las referencias aprobadas; indicadores reales, archivos y seguimiento visibles.
+- Lecturas de analítica, exportación de campos personalizados, controles de revisión, historial de decisiones y protección de borradores.
+
+**Decisiones**
+- Título, área y responsable siguen obligatorios, conforme a la aprobación del usuario.
+- Prioridades conservan sus claves; etiquetas y opciones activas se configuran desde el formulario.
+- Encuestas sin cota de cantidad en el editor, con cinco estrellas por pregunta y pregunta general obligatoria para CSAT.
+- Se conservan el flujo de aprobación y los permisos existentes; los módulos y los datos inventados de las referencias no se incorporan.
+- El documento privado de recomendaciones de negocio permanece excluido de Git.
+
+**Validación**
+- Pruebas de flujo, permisos, valores, encuestas, exportación y horas hábiles; TypeScript, ESLint y compilación.
+- Migraciones comprobadas en una base PostgreSQL aislada, conservando 442 tickets, 237 encuestas y 1322 eventos.
+- Pendiente comparación visual con sesión: el runtime del navegador no está disponible.
+
 ## 2026-10-09 — Versión 0.1.1
 
 - Se publica `v0.1.1` con el módulo 08 (auditoría y parámetros), los avisos instantáneos, las horas hábiles en la analítica, la paginación de la Bandeja, los respaldos y el logotipo. El detalle está en `CHANGELOG.md`.

@@ -12,7 +12,7 @@ y te dice qué tan satisfechos quedan tus clientes.
 
 [**Pruébalo en 5 minutos**](docs/instalacion.md) · [Novedades](CHANGELOG.md)
 
-![Versión](https://img.shields.io/badge/versi%C3%B3n-0.1.1-ff8e3c)
+![Versión](https://img.shields.io/badge/versi%C3%B3n-0.1.2-ff8e3c)
 ![Licencia](https://img.shields.io/badge/licencia-AGPL--3.0-0b1d3a)
 ![Gratis](https://img.shields.io/badge/costo%20por%20usuario-%240-0b1d3a)
 
