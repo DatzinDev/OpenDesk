@@ -16,12 +16,12 @@ export function SurveyCard({ ticketId }: { ticketId: string }) {
         </Text>
         {data.rating ? (
           <>
-            <Group gap="sm">
+            {data.questions.length > 0 ? data.questions.map(q => <Stack key={q.id} gap={4}><Text size="sm">{q.label}</Text><Group gap="sm"><Rating value={data.ratings[q.id] ?? 0} readOnly color="orange" /><Text size="sm">{data.ratings[q.id] ? `${data.ratings[q.id]} de 5` : "Sin respuesta"}</Text></Group></Stack>) : <Group gap="sm">
               <Rating value={data.rating} readOnly color="orange" />
               <Text size="sm" fw={500}>
                 {data.rating} de 5
               </Text>
-            </Group>
+            </Group>}
             {data.comment && (
               <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
                 {data.comment}

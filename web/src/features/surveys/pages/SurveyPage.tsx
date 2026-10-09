@@ -1,8 +1,10 @@
-import { Alert, Button, Center, Group, Loader, Paper, Stack, Text, Textarea, Title } from "@mantine/core";
+import { Alert, Button, Center, Group, Loader, Paper, Rating, Stack, Text, Textarea, Title } from "@mantine/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { DatzinSignature, Logo } from "@/shared/ui";
+import { DatzinSignature } from "@/shared/ui";
+import { OrganizationLogo } from "@/features/settings";
+import { CSAT_ID } from "@/features/settings";
 import { surveysApi } from "../api";
 
 const SCALE = [1, 2, 3, 4, 5];
@@ -14,7 +16,7 @@ export function SurveyPage() {
   const qc = useQueryClient();
   const { data, isLoading, isError } = useQuery({ queryKey: ["survey", token], queryFn: () => surveysApi.status(token), retry: false });
   const rate = useMutation({
-    mutationFn: (rating: number) => surveysApi.rate(token, rating),
+    mutationFn: (ratings: Record<string, number>) => surveysApi.rate(token, ratings),
     onSuccess: (s) => qc.setQueryData(["survey", token], s),
   });
   const comment = useMutation({
@@ -22,16 +24,13 @@ export function SurveyPage() {
     onSuccess: (s) => qc.setQueryData(["survey", token], s),
   });
   const [text, setText] = useState("");
-  const sent = useRef(false);
+  const [answers, setAnswers] = useState<Record<string, number>>({});
 
-  // La calificación elegida en el correo se registra con un POST al abrir la página (nunca con el GET del enlace).
+  // El correo solo preselecciona; guardar requiere una acción explícita del cliente.
   const fromMail = Number(params.get("r"));
   useEffect(() => {
-    if (data?.state === "pending" && SCALE.includes(fromMail) && !sent.current) {
-      sent.current = true;
-      rate.mutate(fromMail);
-    }
-  }, [data?.state]);
+    setAnswers(SCALE.includes(fromMail) ? { [CSAT_ID]: fromMail } : {});
+  }, [token, fromMail]);
 
   let content;
   if (isLoading || rate.isPending) content = <Center py="xl"><Loader color="navy" /></Center>;
@@ -42,18 +41,9 @@ export function SurveyPage() {
   else if (data.state === "pending")
     content = (
       <Stack gap="md">
-        <Text fw={500}>{data.question}</Text>
-        <Group gap="sm" justify="center">
-          {SCALE.map((n) => (
-            <Button key={n} size="lg" w={56} px={0} variant="default" onClick={() => rate.mutate(n)} aria-label={`Calificar con ${n}`}>
-              {n}
-            </Button>
-          ))}
-        </Group>
-        <Group justify="space-between">
-          <Text size="xs" c="dimmed">Nada satisfecho</Text>
-          <Text size="xs" c="dimmed">Muy satisfecho</Text>
-        </Group>
+        <form onSubmit={e => { e.preventDefault(); rate.mutate(answers); }}>
+          <Stack gap="xl">{data.questions.map(q => <Stack key={q.id} gap="sm"><Text fw={500} id={`question-${q.id}`}>{q.label}{q.required ? " *" : ""}</Text>{q.help && <Text size="sm" c="dimmed">{q.help}</Text>}<Rating count={5} size="xl" color="orange" value={answers[q.id] ?? 0} onChange={value => setAnswers(current => { const next = { ...current }; if (value) next[q.id] = value; else delete next[q.id]; return next; })} aria-label={q.label} /><Group justify="space-between"><Text size="xs" c="dimmed">1 estrella</Text><Text size="xs" c="dimmed">5 estrellas</Text></Group></Stack>)}<Button type="submit" disabled={data.questions.some(q => q.required && !answers[q.id])}>Enviar respuestas</Button></Stack>
+        </form>
         {rate.error && <Alert color="red" variant="light">{rate.error.message}</Alert>}
       </Stack>
     );
@@ -62,12 +52,13 @@ export function SurveyPage() {
       <Stack gap="md">
         <div>
           <Title order={2} fz="lg">
-            {sent.current || rate.isSuccess ? "¡Gracias por tu respuesta!" : "Esta encuesta ya fue respondida"}
+            {rate.isSuccess ? "¡Gracias por tu respuesta!" : "Esta encuesta ya fue respondida"}
           </Title>
           <Text c="dimmed" size="sm">
-            Calificación registrada: {data.rating} de 5.
+            Respuestas registradas.
           </Text>
         </div>
+        {data.questions.map(q => <Stack key={q.id} gap={4}><Text size="sm">{q.label}</Text><Group><Rating value={data.ratings[q.id] ?? 0} readOnly color="orange" /><Text size="xs" c="dimmed">{data.ratings[q.id] ? `${data.ratings[q.id]} de 5` : "Sin respuesta"}</Text></Group></Stack>)}
         {data.has_comment ? (
           <Text size="sm">Recibimos tu comentario. Nos ayuda a mejorar.</Text>
         ) : (
@@ -102,7 +93,7 @@ export function SurveyPage() {
   return (
     <main style={{ minHeight: "100vh", background: "var(--mantine-color-gray-1)", display: "grid", placeItems: "center", padding: 16 }}>
       <Stack gap="lg" w="100%" maw={480}>
-        <Logo tone="dark" size={22} />
+        <OrganizationLogo tone="dark" size={22} />
         <Paper radius="lg" withBorder p="xl">
           <Stack gap="lg">
             {data && (
