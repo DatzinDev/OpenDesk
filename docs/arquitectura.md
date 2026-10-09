@@ -81,7 +81,8 @@ api/
 │       ├── notifications/    reacciona a eventos y envía correos / avisos en sistema
 │       ├── areas/            áreas, horario, festivos y cálculo del SLA
 │       ├── tickets/          tickets, propuestas, decisiones, línea de tiempo y adjuntos
-│       └── …                 surveys, analytics (módulos posteriores)
+│       ├── surveys/          encuesta CSAT al cliente; rutas públicas con token de un solo uso
+│       └── …                 analytics (módulo posterior)
 └── tests/
 ```
 
@@ -173,7 +174,8 @@ web/src/
     ├── users/                misma forma
     ├── areas/
     ├── tickets/              bandeja, mis actividades y detalle de ticket
-    └── notifications/        campana de avisos
+    ├── notifications/        campana de avisos
+    └── surveys/              página pública /encuesta/:token y resultado en el ticket
 ```
 
 ### Reglas de dependencia
