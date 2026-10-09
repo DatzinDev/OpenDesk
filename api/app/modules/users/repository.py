@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.modules.users.models import User
@@ -19,8 +19,9 @@ def list_(db: Session, exclude_admins: bool) -> list[User]:
     return list(db.scalars(q))
 
 
-def in_area_above_level(db: Session, area_id: int, level: int) -> list[User]:
-    return list(db.scalars(select(User).where(User.area_id == area_id, User.level > level)))
+def highest_level(db: Session, area_id: int) -> int:
+    q = select(func.max(User.level)).where(User.area_id == area_id, User.is_active)
+    return db.scalar(q) or 0
 
 
 def add(db: Session, user: User) -> User:

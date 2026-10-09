@@ -48,6 +48,12 @@ def save_area(db: Session, actor_id: int, data: AreaIn, area_id: int | None = No
         area = repo.get(db, area_id)
         if not area:
             raise NotFound
+        if row["levels"] < area.levels:
+            from app.modules import users  # importación diferida: users depende de areas
+
+            occupied = users.highest_level_in_area(db, area.id)
+            if row["levels"] < occupied:
+                raise Conflict(f"Hay personas en el nivel {occupied}. Muévelas a un nivel inferior antes de reducir los niveles.")
         changes = {k: [str(getattr(area, k)), str(v)] for k, v in row.items() if getattr(area, k) != v}
         for k, v in row.items():
             setattr(area, k, v)

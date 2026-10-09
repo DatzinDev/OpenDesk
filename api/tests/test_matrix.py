@@ -37,8 +37,9 @@ def test_area_change_resets_level(db, env):
     assert service.update_user(db, root, u.id, UserUpdate(area_id=a2.id)).level == 1
 
 
-def test_reducing_area_levels_moves_people_down(db, env):
+def test_cannot_reduce_levels_below_occupied(db, env):
     root, a1, _, mk = env
-    u = mk("a@acme.com", a1, 3)
-    areas.save_area(db, root.id, AreaIn(name="Soporte", levels=2), a1.id)
-    assert service.get(db, u.id).level == 2
+    mk("a@acme.com", a1, 2)
+    with pytest.raises(areas.Conflict, match="nivel 2"):
+        areas.save_area(db, root.id, AreaIn(name="Soporte", levels=1), a1.id)
+    assert areas.save_area(db, root.id, AreaIn(name="Soporte", levels=2), a1.id).levels == 2

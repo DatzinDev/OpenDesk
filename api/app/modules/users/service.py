@@ -1,12 +1,12 @@
 from sqlalchemy.orm import Session
 
-from app.core.db import SessionLocal, now
+from app.core.db import now
 from app.modules import areas
 from app.modules.users import repository as repo
 from app.modules.users.events import UserCreated, UserUpdated
 from app.modules.users.models import User
 from app.modules.users.schemas import UserCreate, UserOut, UserUpdate
-from app.shared.events import publish, subscribe
+from app.shared.events import publish
 
 
 class Forbidden(Exception):
@@ -130,16 +130,7 @@ def ensure_root(db: Session, email: str) -> None:
     db.commit()
 
 
-def _clamp_levels(e: areas.AreaSaved) -> None:
-    """Si un área reduce sus niveles, quien quede fuera pasa al nivel más alto disponible."""
-    if "levels" not in e.changes:
-        return
-    with SessionLocal() as db:
-        top = int(e.changes["levels"][1])
-        for user in repo.in_area_above_level(db, e.area_id, top):
-            user.level = top
-        db.commit()
 
-
-def register() -> None:
-    subscribe(areas.AreaSaved, _clamp_levels)
+def highest_level_in_area(db: Session, area_id: int) -> int:
+    """Nivel más alto ocupado por una persona activa del área (0 si no hay nadie)."""
+    return repo.highest_level(db, area_id)
