@@ -2,6 +2,24 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-08 — Fase 2: áreas, SLA y matriz de responsables
+
+**Cambios**
+- Módulo `areas`:
+  - Alta y edición de áreas con tiempo de primera respuesta, horario de atención (24/7 o días y franja horaria) y pausa opcional en festivos.
+  - Calendario de días festivos.
+  - Cálculo del vencimiento del SLA según el horario del área.
+- Usuarios: el rol Usuario requiere un área; nuevo responsable directo con validación de misma área y sin ciclos.
+- Interfaz: secciones Áreas (con festivos) y Responsables (matriz editable en línea por área), y columna Área en Usuarios.
+- Auditoría de cambios en áreas y festivos.
+
+**Decisiones**
+- El calendario de festivos es de la organización; cada área decide si lo aplica.
+- Toda reasignación (manual, escalamiento o automática) reinicia el SLA completo.
+- Tras aceptar una actualización, el plazo vigente del ticket pasa a ser la fecha compromiso propuesta por el Usuario.
+- El responsable directo pertenece a la misma área. Reasignar a un compañero o a otra área se definirá en el módulo de tickets.
+- Admin y Gestor no pertenecen a un área. No se puede desactivar a quien tiene personas a cargo.
+
 ## 2026-10-08 — Cierre de la fase 1
 
 - Módulo 01 (acceso, usuarios y roles) validado en el entorno desplegado y publicado en `main`.
