@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session
 
 from app.core.db import now
-from app.modules import areas
+from app.modules import areas, settings
 from app.modules.analytics import repository as repo
 
 TABS = ("summary", "times", "team", "flow", "clients", "demand", "me")
@@ -395,11 +395,18 @@ def export_rows(db: Session, f: Filters):
     """Tickets creados en el periodo con los filtros aplicados (RF-07.3)."""
     d = _data(db, f)
     ratings = {s["ticket_id"]: s["rating"] for s in sorted(d.surveys, key=lambda s: s["sent_at"])}
-    yield ["Folio", "Título", "Área", "Asignado", "Prioridad", "Estado", "Resultado", "Cliente", "Correo del cliente",
+    rows = sorted(d.created(f.start, f.end), key=lambda t: t["id"])
+    fields = [field for field in settings.ticket_form(db).fields
+              if field.active or any((t.get("custom_values") or {}).get(str(field.id)) is not None for t in rows)]
+    safe = lambda value: "'" + value if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@")) else value
+    yield [safe(value) for value in ["Folio", "Título", "Área", "Asignado", "Prioridad", "Estado", "Resultado", "Cliente", "Correo del cliente",
            "Creado", "Cerrado", "Plazo vigente", "Con compromiso", "Estatus de seguimiento", "CSAT"]
+           + [f"{field.label} [{str(field.id)[:8]}]" for field in fields]]
     fmt = lambda dt: _local(dt, f.tz).strftime("%Y-%m-%d %H:%M") if dt else ""
-    for t in sorted(d.created(f.start, f.end), key=lambda t: t["id"]):
-        yield [f"OD-{t['id']:06d}", t["title"], d.area(t["area_id"]), d.user(t["assignee_id"]), t["priority"],
+    for t in rows:
+        row = [f"OD-{t['id']:06d}", t["title"], d.area(t["area_id"]), d.user(t["assignee_id"]), t["priority"],
                t["status"], t["outcome"] or "", t["client_name"] or "", t["client_email"] or "", fmt(t["created_at"]),
                fmt(t["closed_at"]), fmt(t["due_at"]), "sí" if t["committed"] else "no",
                d.names["statuses"].get(t["status_id"], ""), ratings.get(t["id"]) or ""]
+        row += [settings.display_value(field, (t.get("custom_values") or {}).get(str(field.id))) for field in fields]
+        yield [safe(value) for value in row]

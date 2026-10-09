@@ -11,7 +11,7 @@ tickets = table(
     column("assignee_id", Integer), column("priority", String), column("status", String), column("outcome", String),
     column("client_name", String), column("client_email", String), column("created_at", TS), column("closed_at", TS),
     column("due_from", TS), column("due_at", TS), column("committed", Boolean), column("needs_manager", Boolean),
-    column("status_id", Integer),
+    column("status_id", Integer), column("custom_values", JSON),
 )
 events = table(
     "tickets_events", column("ticket_id", Integer), column("kind", String), column("actor_id", Integer),
