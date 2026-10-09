@@ -2,6 +2,22 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-09 — Fase 5: encuesta de satisfacción
+
+**Cambios**
+- Módulo `surveys`: al cerrar un ticket como Resuelto con correo de cliente, se envía un correo con la pregunta y 5 botones (CSAT 1–5).
+- Página pública `/encuesta/:token`, sin inicio de sesión: registra la calificación, permite un comentario opcional y avisa si la encuesta ya fue respondida o venció.
+- El resultado (calificación, comentario y fecha) se muestra en el detalle del ticket cerrado.
+- Auditoría de cada respuesta. Datos de prueba: una encuesta contestada en el ticket cerrado de ejemplo.
+
+**Decisiones**
+- Escala 1–5. Token aleatorio de un solo uso, vigente 7 días; solo se guarda su hash.
+- Abrir el enlace no registra la calificación: la página la envía aparte, para que los filtros de correo que abren enlaces no respondan por el cliente.
+- Texto de la pregunta fijo hasta el módulo 08.
+
+**Pendientes**
+- Confirmar la entrega del correo de encuesta a una cuenta real.
+
 ## 2026-10-09 — Cierre de las fases 2 a 4
 
 - Módulos 02 (áreas y SLA), 03 (matriz de escalamiento), 04 (tickets y flujo) y 05 (notificaciones), junto con los identificadores públicos UUID, validados funcionalmente en el entorno desplegado y publicados en `main`.
