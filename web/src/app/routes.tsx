@@ -1,8 +1,9 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AccessDeniedPage, LoginPage, RequireAuth } from "@/features/auth";
-import { HomePage } from "@/features/home";
 import { AreasPage } from "@/features/areas";
+import { InboxPage, MyTicketsPage, TicketPage } from "@/features/tickets";
 import { UsersPage } from "@/features/users";
+import { HomeRedirect } from "./HomeRedirect";
 import { AppShell } from "./AppShell";
 
 export const router = createBrowserRouter([
@@ -15,10 +16,13 @@ export const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <HomePage /> },
+      { index: true, element: <HomeRedirect /> },
+      { path: "tickets/:id", element: <TicketPage /> },
+      { path: "mis-actividades", element: <RequireAuth roles={["usuario"]}><MyTicketsPage /></RequireAuth> },
       ...[
         { path: "usuarios", page: <UsersPage /> },
         { path: "areas", page: <AreasPage /> },
+        { path: "bandeja", page: <InboxPage /> },
       ].map(({ path, page }) => ({ path, element: <RequireAuth roles={["admin", "gestor"]}>{page}</RequireAuth> })),
     ],
   },
