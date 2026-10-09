@@ -82,7 +82,7 @@ api/
 │       ├── areas/            áreas, horario, festivos y cálculo del SLA
 │       ├── tickets/          tickets, propuestas, decisiones, línea de tiempo y adjuntos
 │       ├── surveys/          encuesta CSAT al cliente; rutas públicas con token de un solo uso
-│       └── …                 analytics (módulo posterior)
+│       └── analytics/        métricas de solo lectura por pestaña y exportación CSV (excepción de lectura)
 └── tests/
 ```
 
@@ -136,6 +136,13 @@ Cada tabla tiene dos identificadores con propósitos distintos:
 5. `core` y `shared` no importan nada de `modules`.
 6. `tests/test_architecture.py` verifica las reglas 1, 2 y 5 en cada ejecución de pruebas.
 
+### Excepción de lectura: `analytics`
+
+`analytics` es un modelo de lectura para reportes. Puede consultar con `SELECT` las tablas de otros módulos,
+declaradas como tablas ligeras (`sqlalchemy.table`) sin importar sus modelos. Nunca escribe en ellas. Las
+métricas se calculan en Python sobre los datos del periodo; si el volumen crece a cientos de miles de tickets,
+el siguiente paso es moverlas a vistas o a tablas de resumen sin cambiar el contrato del API.
+
 ### Qué se comparte y qué se encapsula
 
 | Compartido (`core`, `shared`) | Encapsulado (dentro de cada módulo) |
@@ -175,7 +182,8 @@ web/src/
     ├── areas/
     ├── tickets/              bandeja, mis actividades y detalle de ticket
     ├── notifications/        campana de avisos
-    └── surveys/              página pública /encuesta/:token y resultado en el ticket
+    ├── surveys/              página pública /encuesta/:token y resultado en el ticket
+    └── analytics/            tableros con @mantine/charts (carga diferida)
 ```
 
 ### Reglas de dependencia

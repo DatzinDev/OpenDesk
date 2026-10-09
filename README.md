@@ -57,7 +57,7 @@ flowchart LR
 | Tickets | Formulario breve, propuestas del usuario (actualizar, escalar, reasignar, cerrar), aprobación del gestor y adjuntos | ✅ |
 | Notificaciones | Campana de avisos y correo, auto-escalamiento por SLA vencido, recordatorios y cronómetro de plazos | ✅ |
 | Encuesta | Calificación del cliente con un solo clic desde el correo | ✅ |
-| Analítica | KPIs, tendencias y cumplimiento de SLA en tiempo real | 🔜 |
+| Analítica | Seis tableros (resumen, tiempos y SLA, equipo, flujo, clientes y demanda), vista personal y exportación a CSV | 🚧 |
 
 ### Roles
 
@@ -116,8 +116,8 @@ dependencia entre módulos se verifican automáticamente. Así, cualquier módul
 adelante como servicio independiente. El detalle está en [docs/arquitectura.md](docs/arquitectura.md).
 
 ```
-api/app/modules/   identity · users · areas · tickets · surveys · audit · notifications · …
-web/src/features/  auth · users · areas · tickets · notifications · surveys · …
+api/app/modules/   identity · users · areas · tickets · surveys · analytics · audit · notifications · …
+web/src/features/  auth · users · areas · tickets · notifications · surveys · analytics · …
 ```
 
 ## Desarrollo
