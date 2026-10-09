@@ -2,6 +2,20 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-09 — Fase 7: auditoría y parámetros
+
+**Cambios**
+- Módulo `settings` y pantalla **Configuración**:
+  - **Operación** (Admin y Gestor): nombre de la organización, horas del recordatorio, porcentaje de aviso del SLA y pregunta de la encuesta, con vista previa.
+  - **Técnicos** (solo Admin): dominio permitido y zona horaria, más un botón de correo de prueba que muestra el error del servidor de correo si falla.
+- Los parámetros reemplazan los valores fijos en avisos, recordatorios, encuesta, correos, inicio de sesión, cálculo de SLA y analítica.
+- Pantalla **Auditoría** (solo Admin): filtros por persona, tipo de evento y fechas; acciones en lenguaje claro; folios enlazados al ticket; y detalle sin ids internos.
+- Corrección: la validación de la sesión ya no falla con fechas sin zona horaria.
+
+**Decisiones**
+- `settings` no importa otros módulos, para que todos lo puedan usar sin formar ciclos.
+- Los parámetros se leen en cada uso, así que los cambios aplican de inmediato, también en el worker.
+
 ## 2026-10-09 — README y guía de contribución
 
 **Cambios**
