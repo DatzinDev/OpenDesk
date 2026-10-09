@@ -92,6 +92,7 @@ La cuenta definida en `ADMIN_EMAIL` es el Administrador principal y puede dar de
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_USE_TLS` | Servidor SMTP |
 | `MAIL_FROM` / `MAIL_FROM_NAME` | Remitente de los correos |
 | `ADMIN_EMAIL` | Correo del Administrador principal |
+| `DEV_SEED` | `true` para cargar datos ficticios de prueba al iniciar |
 
 ### Producción
 
@@ -123,6 +124,10 @@ web/src/features/  auth · users · home · …
 docker compose up -d --build          # entorno con recarga automática
 docker compose exec api pytest -q     # pruebas del backend
 ```
+
+En desarrollo, `DEV_SEED=true` (valor por defecto en `compose.yml`) carga al iniciar las áreas, personas,
+matriz de escalamiento y días festivos ficticios de [`api/seeds/dev.sql`](api/seeds/dev.sql). La carga es
+idempotente. En producción se controla con la misma variable en `.env` (por defecto `false`).
 
 Las convenciones de commits, el flujo de trabajo y el historial de decisiones están en la
 [bitácora](docs/bitacora.md).

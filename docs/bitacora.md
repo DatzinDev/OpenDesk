@@ -12,6 +12,7 @@ Registro histórico del proyecto. Entradas en orden cronológico inverso; cada e
 - Usuarios: el rol Usuario requiere un área; nuevo responsable directo con validación de misma área y sin ciclos.
 - Interfaz: sección Áreas con tres pestañas (áreas y personas, matriz de escalamiento y días festivos) y columna Área en Usuarios.
 - Auditoría de cambios en áreas y festivos.
+- Modo de datos de prueba (`DEV_SEED=true`): `api/seeds/dev.sql` carga 3 áreas, 2 gestores, 10 usuarios, una matriz de escalamiento y días festivos.
 
 **Decisiones**
 - El calendario de festivos es de la organización; cada área decide si lo aplica.

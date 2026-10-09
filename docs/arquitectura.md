@@ -38,6 +38,8 @@ Ver `.env.example`. Las credenciales nunca se exponen en la interfaz.
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Cliente OAuth de Google. URI de redirección autorizada: `{APP_URL}/api/auth/callback`. |
 | `MAIL_*` | Servidor SMTP y remitente. |
 | `ADMIN_EMAIL` | Cuenta del Admin principal (inmutable desde la aplicación). |
+| `APP_TIMEZONE` | Zona horaria para el cálculo de SLA (por defecto `America/Mexico_City`). |
+| `DEV_SEED` | `true` ejecuta `api/seeds/dev.sql` al iniciar: datos ficticios idempotentes para pruebas. |
 
 ## 2. Arquitectura general
 
