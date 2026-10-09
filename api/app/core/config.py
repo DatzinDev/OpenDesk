@@ -18,3 +18,9 @@ MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "true").lower() == "true"
 
 SECURE_COOKIES = APP_URL.startswith("https://")
 APP_TIMEZONE = os.environ.get("APP_TIMEZONE", "America/Mexico_City")
+
+# Almacenamiento de adjuntos compatible con S3 (SeaweedFS en Docker).
+S3_ENDPOINT = os.environ.get("S3_ENDPOINT", "http://storage:8333")
+S3_ACCESS_KEY = os.environ.get("S3_ACCESS_KEY", "")
+S3_SECRET_KEY = os.environ.get("S3_SECRET_KEY", "")
+S3_BUCKET = os.environ.get("S3_BUCKET", "opendesk")
