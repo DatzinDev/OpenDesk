@@ -6,7 +6,7 @@ Registro histórico del proyecto. Entradas en orden cronológico inverso; cada e
 
 **Cambios**
 - El responsable directo por persona se sustituye por **niveles de escalamiento por área**. Cada área define cuántos niveles tiene y cada persona ocupa uno.
-- Matriz rediseñada: cada área muestra sus niveles del más alto al más bajo. El número de niveles se ajusta en la misma vista, y cada persona se mueve de nivel desde su etiqueta.
+- Matriz rediseñada: cada área muestra sus niveles del más alto al más bajo. El número de niveles se ajusta en la misma vista, y cada persona se arrastra al nivel deseado (o se mueve desde el menú de su etiqueta).
 - Migración: los usuarios existentes pasan al nivel 1 y las áreas a 3 niveles.
 - Datos de prueba con niveles asignados.
 

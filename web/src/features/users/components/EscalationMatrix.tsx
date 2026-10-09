@@ -1,6 +1,7 @@
 import { Alert, Avatar, Badge, Group, Menu, NumberInput, Paper, Stack, Text, Title, UnstyledButton } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconArrowNarrowUp, IconChevronDown } from "@tabler/icons-react";
+import { useState } from "react";
 import { useAreas, useSaveArea, type Area } from "@/features/areas";
 import { useUpdateUser, useUsers } from "../hooks";
 import type { User } from "../types";
@@ -11,11 +12,15 @@ export function EscalationMatrix() {
   const { data: areas = [] } = useAreas();
   const update = useUpdateUser();
   const saveArea = useSaveArea();
+  // Arrastre nativo (HTML5). En pantallas táctiles se usa el menú de cada persona.
+  const [dragged, setDragged] = useState<User | null>(null);
+  const [over, setOver] = useState<string | null>(null); // "areaId:nivel" bajo el cursor
 
   const people = users.filter((u) => u.role === "usuario" && u.is_active);
   const withoutArea = people.filter((u) => !u.area_id);
 
-  const moveTo = (u: User, level: number) =>
+  const moveTo = (u: User, level: number) => {
+    if (u.level === level) return;
     update.mutate(
       { id: u.id, data: { level } },
       {
@@ -23,6 +28,7 @@ export function EscalationMatrix() {
         onError: (e) => notifications.show({ color: "pink", message: e.message }),
       },
     );
+  };
 
   const setLevels = (area: Area, levels: number) => {
     if (levels === area.levels || levels < 1 || levels > 10) return;
@@ -45,7 +51,7 @@ export function EscalationMatrix() {
   return (
     <Stack gap="lg">
       <Text size="sm" c="dimmed" maw={680}>
-        El nivel 1 es el primer contacto. Cuando una persona escala un ticket o no responde a tiempo, el ticket sube al
+        Arrastra a cada persona al nivel que le corresponde. El nivel 1 es el primer contacto. Cuando una persona escala un ticket o no responde a tiempo, el ticket sube al
         siguiente nivel con personas y se asigna a quien tenga menos tickets abiertos. Si ya está en el nivel más alto,
         interviene el Gestor.
       </Text>
@@ -89,6 +95,8 @@ export function EscalationMatrix() {
               <Stack gap={6}>
                 {levels.map((level, idx) => {
                   const atLevel = members.filter((u) => u.level === level);
+                  const key = `${area.id}:${level}`;
+                  const canDrop = dragged?.area_id === area.id && dragged.level !== level;
                   return (
                     <div key={level}>
                       {idx > 0 && (
@@ -101,9 +109,24 @@ export function EscalationMatrix() {
                         wrap="nowrap"
                         align="flex-start"
                         p="sm"
+                        onDragOver={(e) => {
+                          if (!canDrop) return;
+                          e.preventDefault();
+                          setOver(key);
+                        }}
+                        onDragLeave={() => setOver((o) => (o === key ? null : o))}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (canDrop && dragged) moveTo(dragged, level);
+                          setOver(null);
+                          setDragged(null);
+                        }}
                         style={{
                           borderRadius: 10,
-                          background: level === area.levels ? "var(--mantine-color-navy-0)" : "var(--mantine-color-gray-0)",
+                          outline: over === key ? "2px dashed var(--mantine-color-orange-4)" : canDrop ? "1px dashed var(--mantine-color-gray-4)" : "none",
+                          outlineOffset: -2,
+                          transition: "outline-color 120ms",
+                          background: over === key ? "var(--mantine-color-orange-0)" : level === area.levels ? "var(--mantine-color-navy-0)" : "var(--mantine-color-gray-0)",
                           borderLeft: `3px solid ${level === 1 ? "var(--mantine-color-orange-4)" : "var(--mantine-color-navy-" + Math.min(2 + level, 7) + ")"}`,
                         }}
                       >
@@ -126,7 +149,19 @@ export function EscalationMatrix() {
                               <Menu.Target>
                                 <UnstyledButton
                                   aria-label={`Cambiar nivel de ${u.name}`}
+                                  draggable
+                                  onDragStart={(e) => {
+                                    e.dataTransfer.effectAllowed = "move";
+                                    e.dataTransfer.setData("text/plain", String(u.id));
+                                    setDragged(u);
+                                  }}
+                                  onDragEnd={() => {
+                                    setDragged(null);
+                                    setOver(null);
+                                  }}
                                   style={{
+                                    cursor: "grab",
+                                    opacity: dragged?.id === u.id ? 0.4 : 1,
                                     display: "flex",
                                     alignItems: "center",
                                     gap: 8,
