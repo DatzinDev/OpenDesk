@@ -2,6 +2,22 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-09 — Mejoras: avisos instantáneos, horas hábiles y paginación
+
+**Cambios**
+- **Avisos instantáneos:** la campana recibe los avisos al momento por Server-Sent Events, mediante `LISTEN/NOTIFY` de PostgreSQL. Funciona también con los avisos que genera el worker. Al llegar un aviso se refrescan las listas de tickets en pantalla. La consulta periódica queda como respaldo, cada 2 minutos.
+- **Horas hábiles en la analítica:**
+  - La primera respuesta y la resolución descuentan lo que queda fuera del horario del área y sus festivos.
+  - `areas.sla` gana `elapsed`, el inverso de `deadline`.
+  - Tickets registra la primera respuesta también en minutos hábiles.
+- **Paginación de la Bandeja:** de 50 en 50, con el total, mediante el nuevo endpoint `GET /api/tickets/page`. Las demás listas siguen cargando todo.
+- nginx sirve el canal de avisos sin búfer.
+
+**Decisiones**
+- Una conexión de PostgreSQL por pestaña abierta con avisos en tiempo real; suficiente para equipos de decenas de personas.
+- La antigüedad de los abiertos sigue en tiempo natural.
+- La paginación usa un endpoint aparte, para no cambiar la respuesta de la lista existente.
+
 ## 2026-10-09 — Fase 7: auditoría y parámetros
 
 **Cambios**
