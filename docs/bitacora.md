@@ -2,6 +2,16 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-09 — Respaldos
+
+**Cambios**
+- Servicio `backup` en producción (`ops/backup.sh`): cada día a las 03:00 genera un volcado de la base de datos y una copia del volumen de adjuntos en `./backups`, y conserva 14 días.
+- `docs/instalacion.md`: respaldo inmediato, restauración, y pasos para pasar de la demostración a uso real.
+
+**Decisiones**
+- Los respaldos quedan en el mismo servidor; copiarlos fuera es responsabilidad de quien opera la instalación y se indica en la guía.
+- Tank sigue como demostración, con `DEV_SEED=true`.
+
 ## 2026-10-09 — Mejoras: avisos instantáneos, horas hábiles y paginación
 
 **Cambios**
