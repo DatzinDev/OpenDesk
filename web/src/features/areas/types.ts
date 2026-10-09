@@ -4,12 +4,12 @@ export type Area = {
   description: string;
   sla_hours: number;
   always_open: boolean;
-  days: number[]; // 0 = lunes
-  start_time: string; // HH:MM[:SS]
-  end_time: string;
+  week: DayHours[]; // 7 entradas, 0 = lunes
   pause_on_holidays: boolean;
   is_active: boolean;
 };
+
+export type DayHours = [string, string] | null; // ["09:00", "18:00"] o null si no se atiende
 
 export type AreaInput = Omit<Area, "id">;
 
@@ -19,10 +19,17 @@ export const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
 const hhmm = (t: string) => t.slice(0, 5);
 
-export function describeSchedule(a: Pick<Area, "always_open" | "days" | "start_time" | "end_time">): string {
+/** Agrupa días consecutivos con el mismo horario: "Lun a Vie 09:00 a 18:00; Sáb 09:00 a 14:00". */
+export function describeSchedule(a: Pick<Area, "always_open" | "week">): string {
   if (a.always_open) return "24/7";
-  const key = a.days.join("");
-  const days =
-    key === "01234" ? "Lunes a viernes" : key === "012345" ? "Lunes a sábado" : key === "0123456" ? "Todos los días" : a.days.map((d) => DAY_LABELS[d]).join(", ");
-  return `${days}, ${hhmm(a.start_time)} a ${hhmm(a.end_time)}`;
+  const parts: string[] = [];
+  let i = 0;
+  while (i < 7) {
+    const w = a.week[i];
+    let j = i;
+    while (j + 1 < 7 && JSON.stringify(a.week[j + 1]) === JSON.stringify(w)) j++;
+    if (w) parts.push(`${DAY_LABELS[i]}${j > i ? ` a ${DAY_LABELS[j]}` : ""} ${hhmm(w[0])} a ${hhmm(w[1])}`);
+    i = j + 1;
+  }
+  return parts.join("; ");
 }
