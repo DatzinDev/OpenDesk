@@ -11,8 +11,8 @@ Documentos relacionados: [Stack y arquitectura](../arquitectura.md) · [Diseño]
 | # | Módulo | Archivo | Estado |
 |---|--------|---------|--------|
 | 01 | Acceso, usuarios y roles | [01-acceso-usuarios-roles.md](01-acceso-usuarios-roles.md) | Validado |
-| 02 | Áreas y SLA | [02-areas-sla.md](02-areas-sla.md) | Pendiente |
-| 03 | Matriz de responsables | [03-matriz-responsables.md](03-matriz-responsables.md) | Pendiente |
+| 02 | Áreas y SLA | [02-areas-sla.md](02-areas-sla.md) | En desarrollo |
+| 03 | Matriz de responsables | [03-matriz-responsables.md](03-matriz-responsables.md) | En desarrollo |
 | 04 | Tickets y flujo | [04-tickets.md](04-tickets.md) | Pendiente |
 | 05 | Notificaciones | [05-notificaciones.md](05-notificaciones.md) | Pendiente |
 | 06 | Encuesta de satisfacción | [06-encuesta.md](06-encuesta.md) | Pendiente |
@@ -35,7 +35,6 @@ Documentos relacionados: [Stack y arquitectura](../arquitectura.md) · [Diseño]
 **Fuera (v1)**
 - Portal para que el cliente final cree tickets (el ticket lo crea el Gestor).
 - Roles/permisos configurables, campos personalizados, formularios dinámicos.
-- Calendario de días festivos en el cálculo de SLA (ver pregunta abierta en 02).
 - Adjuntos de archivos (ver pregunta abierta en 04).
 - Integraciones (Slack, Teams, WhatsApp), app móvil, multi-idioma, multi-empresa.
 

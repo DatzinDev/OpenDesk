@@ -15,13 +15,14 @@ su rol necesita.
 - RF-01.5 Un usuario desactivado no puede iniciar sesión; su historial se conserva.
 
 ## Usuarios
-Campos mínimos: nombre, correo (Google), rol, área, responsable directo, activo.
+Campos mínimos: nombre, correo (Google), rol, área, responsable directo (ver 03), activo.
 Foto y nombre se toman de Google en el primer login.
 
 - RF-01.6 Alta/edición/desactivación de usuarios (no se eliminan). El correo es editable (excepto el del
   Admin principal) para corregir errores de captura; al cambiarlo se cierran las sesiones abiertas de esa
   cuenta y se envía el aviso de acceso al nuevo correo.
-- RF-01.7 Un usuario pertenece a **una sola** área.
+- RF-01.7 Las personas con rol Usuario pertenecen a **una sola** área (obligatoria). Admin y Gestor
+  operan sobre todas las áreas y no requieren una.
 - RF-01.8 Los roles son excluyentes: un usuario tiene un único rol. Solo el rol Usuario puede recibir tickets.
 - RF-01.9 Puede haber varios Admins. Solo un Admin puede crear, editar o desactivar otra cuenta Admin (excepto el Admin principal, ver RF-01.4).
 
