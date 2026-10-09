@@ -32,3 +32,67 @@ INSERT INTO areas_holidays (day, name) VALUES
   ('2027-01-01', 'Año Nuevo'),
   ('2027-02-01', 'Día de la Constitución')
 ON CONFLICT (day) DO NOTHING;
+
+-- Tickets de ejemplo en distintos estados; solo se cargan si aún no hay tickets.
+DO $$
+DECLARE
+  g int := (SELECT id FROM users_users WHERE email = 'mariana.ruiz@opendesk.test');
+  t int;
+  u int;
+BEGIN
+  IF EXISTS (SELECT 1 FROM tickets_tickets) THEN RETURN; END IF;
+
+  u := (SELECT id FROM users_users WHERE email = 'sofia.navarro@opendesk.test');
+  INSERT INTO tickets_tickets (title, description, area_id, assignee_id, priority, client_name, client_email, due_from, due_at, created_by)
+  VALUES ('No puedo iniciar sesión en el portal', 'El cliente indica que el portal rechaza su contraseña desde ayer.',
+          (SELECT area_id FROM users_users WHERE id = u), u, 'alta', 'Grupo Andrade', 'compras@andrade.test', now(), now() + interval '20 hours', g)
+  RETURNING id INTO t;
+  INSERT INTO tickets_events (ticket_id, kind, actor_id, data) VALUES (t, 'created', g, json_build_object('to', u));
+
+  u := (SELECT id FROM users_users WHERE email = 'pablo.ibarra@opendesk.test');
+  INSERT INTO tickets_tickets (title, description, area_id, assignee_id, priority, status, due_from, due_at, created_by)
+  VALUES ('Error al exportar reportes en PDF', 'La exportación se queda cargando con reportes de más de 50 páginas.',
+          (SELECT area_id FROM users_users WHERE id = u), u, 'media', 'pendiente', now() - interval '6 hours', now() + interval '6 hours', g)
+  RETURNING id INTO t;
+  INSERT INTO tickets_events (ticket_id, kind, actor_id, data) VALUES (t, 'created', g, json_build_object('to', u));
+  INSERT INTO tickets_events (ticket_id, kind, actor_id, comment, data, state)
+  VALUES (t, 'update', u, 'Reproduje el error; el servicio de exportación agota la memoria. Aplicaré el ajuste en la siguiente ventana.',
+          json_build_object('due_at', to_char((now() + interval '2 days') AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS+00:00')), 'pending');
+
+  u := (SELECT id FROM users_users WHERE email = 'andrea.lozano@opendesk.test');
+  INSERT INTO tickets_tickets (title, description, area_id, assignee_id, priority, status, committed, client_name, due_from, due_at, created_by)
+  VALUES ('Cobro duplicado en la factura de septiembre', 'Aparecen dos cargos por el mismo servicio.',
+          (SELECT area_id FROM users_users WHERE id = u), u, 'alta', 'seguimiento', true, 'Laura Méndez', now() - interval '1 day', now() + interval '3 days', g)
+  RETURNING id INTO t;
+  INSERT INTO tickets_events (ticket_id, kind, actor_id, data) VALUES (t, 'created', g, json_build_object('to', u));
+  INSERT INTO tickets_events (ticket_id, kind, actor_id, comment, data, state, decided_by)
+  VALUES (t, 'update', u, 'Solicité la nota de crédito a contabilidad.',
+          json_build_object('due_at', to_char((now() + interval '3 days') AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS+00:00')), 'accepted', g);
+
+  u := (SELECT id FROM users_users WHERE email = 'diego.herrera@opendesk.test');
+  INSERT INTO tickets_tickets (title, description, area_id, assignee_id, priority, due_from, due_at, created_by)
+  VALUES ('Integración con el ERP sin sincronizar', 'Los pedidos no llegan al ERP desde el lunes.',
+          (SELECT area_id FROM users_users WHERE id = u), u, 'media', now() - interval '30 hours', now() - interval '2 hours', g)
+  RETURNING id INTO t;
+  INSERT INTO tickets_events (ticket_id, kind, actor_id, data) VALUES (t, 'created', g, json_build_object('to', u));
+
+  u := (SELECT id FROM users_users WHERE email = 'camila.reyes@opendesk.test');
+  INSERT INTO tickets_tickets (title, description, area_id, assignee_id, priority, status, outcome, closed_at, client_email, due_from, due_at, created_by)
+  VALUES ('Alta de usuarios para nueva sucursal', 'Se requieren 12 accesos para la sucursal Monterrey.',
+          (SELECT area_id FROM users_users WHERE id = u), u, 'baja', 'cerrado', 'resuelto', now() - interval '1 day', 'ti@norte.test',
+          now() - interval '3 days', now() - interval '2 days', g)
+  RETURNING id INTO t;
+  INSERT INTO tickets_events (ticket_id, kind, actor_id, data) VALUES (t, 'created', g, json_build_object('to', u));
+  INSERT INTO tickets_events (ticket_id, kind, actor_id, comment, data, state, decided_by)
+  VALUES (t, 'close', u, 'Accesos creados y enviados al responsable de la sucursal.', '{"outcome": "resuelto"}', 'accepted', g);
+
+  u := (SELECT id FROM users_users WHERE email = 'valeria.ortiz@opendesk.test');
+  INSERT INTO tickets_tickets (title, description, area_id, assignee_id, priority, status, due_from, due_at, created_by)
+  VALUES ('No se aplica el descuento por volumen', 'El sistema no reconoce el descuento al capturar el pedido.',
+          (SELECT area_id FROM users_users WHERE id = u), u, 'media', 'pendiente', now() - interval '2 hours', now() + interval '10 hours', g)
+  RETURNING id INTO t;
+  INSERT INTO tickets_events (ticket_id, kind, actor_id, data) VALUES (t, 'created', g, json_build_object('to', u));
+  INSERT INTO tickets_events (ticket_id, kind, actor_id, comment, data, state)
+  VALUES (t, 'reassign', u, 'Es una falla de la regla de precios en el sistema, no de facturación.',
+          json_build_object('area_id', (SELECT id FROM areas_areas WHERE name = 'Soporte técnico')), 'pending');
+END $$;
