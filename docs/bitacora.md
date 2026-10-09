@@ -2,6 +2,10 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-08 — Cierre de la fase 1
+
+- Módulo 01 (acceso, usuarios y roles) validado en el entorno desplegado y publicado en `main`.
+
 ## 2026-10-08 — Corrección de correo de usuarios
 
 **Cambios**
