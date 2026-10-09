@@ -5,3 +5,6 @@ __pycache__/
 .claude/
 dist/
 .pytest_cache/
+
+# Respaldos locales de producción
+backups/

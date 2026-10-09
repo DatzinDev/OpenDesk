@@ -53,6 +53,22 @@ services:
     depends_on:
       - api
 
+  backup:
+    # Respaldo diario a las 03:00: base de datos y adjuntos en ./backups, 14 días de retención (ops/backup.sh).
+    image: postgres:16-alpine
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/backup.sh"]
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      TZ: ${APP_TIMEZONE:-America/Mexico_City}
+    volumes:
+      - ./ops/backup.sh:/backup.sh:ro
+      - ./backups:/backups
+      - storage-data:/storage:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
   web:
     build: ./web
     restart: unless-stopped
