@@ -110,6 +110,20 @@ modules/users/
 | `schemas` | Contrato de datos expuesto a otros módulos y al cliente. | Exponer modelos ORM. |
 | `events` | Dataclasses inmutables que describen hechos ocurridos (`UserCreated`). | Contener lógica. |
 
+### Identificadores
+
+Cada tabla tiene dos identificadores con propósitos distintos:
+
+| Columna | Tipo | Uso |
+|---|---|---|
+| `id` | entero autoincremental | Llave primaria, llaves foráneas, uniones y consultas internas. Nunca sale del API. |
+| `uuid` | UUID v4 (`gen_random_uuid()`) | Identificador público: respuestas JSON, URLs y parámetros de entrada. |
+
+- Los routers y servicios reciben UUID y los traducen a `id` antes de consultar; las respuestas se arman
+  con UUID (mixin `PublicId` en `core/db.py`).
+- Dentro del proceso (servicios, eventos, auditoría) se trabaja con el `id` entero.
+- El folio visible del ticket (`OD-000123`) se deriva del `id` interno y es solo de lectura.
+
 ### Reglas de dependencia
 
 1. Un módulo puede importar de `core`, `shared` y del **`__init__.py`** de otro módulo.
