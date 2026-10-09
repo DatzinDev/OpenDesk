@@ -2,6 +2,21 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-09 — README y guía de contribución
+
+**Cambios**
+- README reorganizado como proyecto open source:
+  - propuesta de valor;
+  - funcionalidades por área;
+  - roles actualizados;
+  - inicio rápido por HTTPS;
+  - tabla de configuración completa con valores por defecto;
+  - diagrama de servicios;
+  - hoja de ruta y tabla de documentación.
+- Se corrigen descripciones que ya no aplicaban: el Administrador aún no tiene pantalla de parámetros ni de auditoría, y faltaban el worker, el almacenamiento y varias variables.
+- Nueva `CONTRIBUTING.md` con el entorno, las reglas de código, las pruebas y la convención de commits.
+- `.env.example` documenta las variables opcionales `APP_TIMEZONE`, `REMINDER_HOURS` y `WEB_PORT`.
+
 ## 2026-10-09 — Versión 0.1.0
 
 - Módulo 07 (analítica) y datos de prueba completos validados y publicados en `main`.
