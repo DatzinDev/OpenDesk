@@ -1,6 +1,7 @@
 import { Avatar, Badge, Button, Group, Paper, SegmentedControl, Table, Text, TextInput } from "@mantine/core";
 import { IconLock, IconPlus, IconSearch } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
+import { useAreas } from "@/features/areas";
 import { useMe } from "@/features/auth";
 import { PageHeader } from "@/shared/ui";
 import { UserDrawer } from "../components/UserDrawer";
@@ -13,6 +14,8 @@ type StatusFilter = "activos" | "inactivos" | "todos";
 export function UsersPage() {
   const { data: me } = useMe();
   const { data: users = [], isLoading } = useUsers();
+  const { data: areas = [] } = useAreas();
+  const areaName = (id: number | null) => areas.find((a) => a.id === id)?.name;
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("activos");
   const [drawer, setDrawer] = useState<{ open: boolean; user: User | null }>({ open: false, user: null });
@@ -67,6 +70,7 @@ export function UsersPage() {
               <Table.Tr>
                 <Table.Th>Persona</Table.Th>
                 <Table.Th>Rol</Table.Th>
+                <Table.Th>Área</Table.Th>
                 <Table.Th>Estado</Table.Th>
                 <Table.Th>Último acceso</Table.Th>
               </Table.Tr>
@@ -98,6 +102,11 @@ export function UsersPage() {
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm">{ROLE_LABELS[u.role]}</Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm" c={u.area_id ? undefined : "dimmed"}>
+                      {u.role === "usuario" ? (areaName(u.area_id) ?? "Sin área") : "Todas"}
+                    </Text>
                   </Table.Td>
                   <Table.Td>
                     <Badge variant="light" color={u.is_active ? "teal" : "gray"} radius="sm">

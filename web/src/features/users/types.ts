@@ -6,14 +6,16 @@ export type User = {
   name: string;
   picture: string | null;
   role: Role;
+  area_id: number | null;
+  manager_id: number | null;
   is_active: boolean;
   is_root: boolean;
   created_at: string;
   last_login_at: string | null;
 };
 
-export type UserCreate = { email: string; name: string; role: Role };
-export type UserUpdate = Partial<Pick<User, "email" | "name" | "role" | "is_active">>;
+export type UserCreate = { email: string; name: string; role: Role; area_id: number | null };
+export type UserUpdate = Partial<Pick<User, "email" | "name" | "role" | "area_id" | "is_active">>;
 
 export const ROLE_LABELS: Record<Role, string> = {
   admin: "Administrador",
