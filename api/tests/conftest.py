@@ -14,6 +14,7 @@ from app.modules.identity import models as _i  # noqa: E402,F401
 from app.modules.tickets import models as _t  # noqa: E402,F401
 from app.modules.notifications import models as _n  # noqa: E402,F401
 from app.modules.surveys import models as _s  # noqa: E402,F401
+from app.modules.settings import models as _p  # noqa: E402,F401
 from app.shared import events, mailer  # noqa: E402
 
 

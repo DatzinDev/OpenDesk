@@ -10,8 +10,10 @@ from app.shared import storage
 from app.modules import audit, identity, notifications, surveys, users
 from app.modules.analytics.router import router as analytics_router
 from app.modules.areas.router import router as areas_router
+from app.modules.audit.router import router as audit_router
 from app.modules.identity.router import router as identity_router
 from app.modules.notifications.router import router as notifications_router
+from app.modules.settings.router import router as settings_router
 from app.modules.surveys.router import router as surveys_router
 from app.modules.tickets.router import router as tickets_router
 from app.modules.users.router import router as users_router
@@ -52,3 +54,5 @@ app.include_router(tickets_router)
 app.include_router(notifications_router)
 app.include_router(surveys_router)
 app.include_router(analytics_router)
+app.include_router(settings_router)
+app.include_router(audit_router)

@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 from sqlalchemy import update
@@ -35,7 +36,7 @@ def env(db, monkeypatch):
 
 
 def _f(area=None):
-    return an.Filters.from_dates(date.today() - timedelta(days=29), date.today() + timedelta(days=1), area_id=area)
+    return an.Filters.from_dates(date.today() - timedelta(days=29), date.today() + timedelta(days=1), ZoneInfo("America/Mexico_City"), area_id=area)
 
 
 def _created_hours_ago(db, ticket_uuid, hours):
