@@ -1,8 +1,9 @@
 <div align="center">
 
-<img src="web/src/shared/assets/datzin-marca.png" alt="Datzin" width="72" />
-
-# OpenDesk
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/opendesk-logo-oscuro.png" />
+  <img src="docs/assets/opendesk-logo-claro.png" alt="OpenDesk" width="320" />
+</picture>
 
 ### Ningún cliente se queda sin respuesta.
 
