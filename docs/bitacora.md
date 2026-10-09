@@ -2,6 +2,20 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-08 — Despliegue de pruebas y licencia
+
+**Cambios**
+- `compose.prod.yml`: la interfaz se compila y se sirve con nginx, el API corre sin recarga y solo se publica un puerto en `127.0.0.1`.
+- Despliegue de pruebas en el servidor `zmx-tank`, en `/srv/apps/opendesk`, publicado en `https://opendesk.datzin.com.mx` mediante Cloudflare Tunnel.
+- README reescrito con formato de proyecto open source.
+- Licencia AGPL-3.0.
+
+**Decisiones**
+- Se eligió la licencia AGPL-3.0 para que las versiones modificadas que se ofrezcan como servicio publiquen su código. El uso interno en una organización sigue siendo libre.
+
+**Pendientes**
+- Validar el inicio de sesión con Google y el envío de correo en el entorno desplegado.
+
 ## 2026-10-08 — Definición del proyecto y módulo 01
 
 **Cambios**
