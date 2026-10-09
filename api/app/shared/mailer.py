@@ -27,25 +27,38 @@ class MailFailed:
     error: str
 
 
-def render(body_html: str, **ctx) -> str:
-    """Envuelve el contenido en el layout con la marca."""
-    return _env.get_template("layout.html").render(body=body_html, app_url=config.APP_URL, **ctx)
+def render(body_html: str, org: str = "OpenDesk", **ctx) -> str:
+    """Envuelve el contenido en el layout con la marca y el nombre de la organización."""
+    return _env.get_template("layout.html").render(body=body_html, app_url=config.APP_URL, org=org, **ctx)
 
 
-def _send(to: str, subject: str, html: str) -> None:
+def send_now(to: str, subject: str, html: str) -> str | None:
+    """Envío síncrono para diagnóstico: devuelve el error SMTP o None si se entregó al servidor."""
+    try:
+        _deliver(to, subject, html)
+    except Exception as exc:
+        return str(exc)[:500]
+    return None
+
+
+def _deliver(to: str, subject: str, html: str) -> None:
     msg = EmailMessage()
     msg["From"] = formataddr((config.MAIL_FROM_NAME, config.MAIL_FROM))
     msg["To"] = to
     msg["Subject"] = subject
     msg.set_content("Abre este correo en un cliente compatible con HTML.")
     msg.add_alternative(html, subtype="html")
+    with smtplib.SMTP(config.MAIL_HOST, config.MAIL_PORT, timeout=20) as smtp:
+        if config.MAIL_USE_TLS:
+            smtp.starttls()
+        if config.MAIL_USERNAME:
+            smtp.login(config.MAIL_USERNAME, config.MAIL_PASSWORD)
+        smtp.send_message(msg)
+
+
+def _send(to: str, subject: str, html: str) -> None:
     try:
-        with smtplib.SMTP(config.MAIL_HOST, config.MAIL_PORT, timeout=20) as smtp:
-            if config.MAIL_USE_TLS:
-                smtp.starttls()
-            if config.MAIL_USERNAME:
-                smtp.login(config.MAIL_USERNAME, config.MAIL_PASSWORD)
-            smtp.send_message(msg)
+        _deliver(to, subject, html)
     except Exception as exc:
         log.warning("No se pudo enviar correo a %s: %s", to, exc)
         publish(MailFailed(to=to, subject=subject, error=str(exc)[:500]))
