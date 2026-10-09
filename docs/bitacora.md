@@ -2,6 +2,24 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-09 — Fase 6: analítica
+
+**Cambios**
+- Módulo `analytics` y sección "Analítica" con seis pestañas: Resumen, Tiempos y SLA, Equipo, Flujo, Clientes y Demanda. El Usuario ve "Mi desempeño".
+- Filtros por rango de fechas, área y prioridad, guardados en la URL. Los datos se actualizan cada 60 s y cada indicador se compara con el periodo anterior.
+- Exportación a CSV de los tickets del periodo.
+- Tickets registra, al aceptar la primera respuesta, el tiempo y el cumplimiento del SLA; al cerrar, si se cumplió la fecha compromiso.
+- Datos de prueba: unos 420 tickets históricos de 90 días, con una distribución realista de horarios, tiempos, escalamientos, envíos entre áreas y encuestas.
+- La sección de Analítica se carga de forma diferida, para no hacer más pesada la carga inicial de la aplicación.
+
+**Decisiones**
+- Se agregan indicadores no previstos al inicio: percentil 90, antigüedad de los abiertos, tasa de rechazo, reaperturas, envíos entre áreas, clientes recurrentes y mapa de calor de la demanda.
+- Las métricas se calculan al consultar, sin tablas de resumen. `analytics` es la única excepción a la regla de que cada módulo lee solo sus tablas, y solo para lectura.
+- Los tiempos se miden en horas de reloj.
+
+**Pendientes**
+- Módulo 08: auditoría y parámetros.
+
 ## 2026-10-09 — Datos de prueba completos
 
 **Cambios**
