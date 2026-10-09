@@ -56,7 +56,7 @@ flowchart LR
 | Matriz de escalamiento | Niveles por área; el ticket sube al siguiente nivel con menor carga | ✅ |
 | Tickets | Formulario breve, propuestas del usuario (actualizar, escalar, reasignar, cerrar), aprobación del gestor y adjuntos | ✅ |
 | Notificaciones | Campana de avisos y correo, auto-escalamiento por SLA vencido, recordatorios y cronómetro de plazos | ✅ |
-| Encuesta | Calificación del cliente con un solo clic desde el correo | 🚧 |
+| Encuesta | Calificación del cliente con un solo clic desde el correo | ✅ |
 | Analítica | KPIs, tendencias y cumplimiento de SLA en tiempo real | 🔜 |
 
 ### Roles
