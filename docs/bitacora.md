@@ -2,6 +2,19 @@
 
 Registro histórico del proyecto. Entradas en orden cronológico inverso; cada entrega agrega una.
 
+## 2026-10-09 — Identificadores públicos UUID
+
+**Cambios**
+- Todas las tablas con llave entera suman una columna `uuid` única (migración `0008`); los datos existentes se conservan.
+- El API, las URLs y los formularios usan solo UUID. Un id entero en una URL se rechaza.
+- La interfaz trata todos los identificadores como UUID.
+- Regla documentada en `docs/arquitectura.md`, sección "Identificadores".
+
+**Decisiones**
+- Se conservan ambos identificadores: el entero para relaciones y consultas internas, el UUID para exponer datos.
+- El folio `OD-000123` sigue derivándose del id interno.
+- Se retiró de producción, a solicitud, un comentario de prueba registrado antes de eliminar la acción "Comentar".
+
 ## 2026-10-08 — Fase 4: notificaciones, auto-escalamiento y estatus de seguimiento
 
 **Cambios**
